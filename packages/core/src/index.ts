@@ -10,6 +10,8 @@ export type { Category, Finding, Reference, Severity, Source } from "./finding.j
 
 export { DiffParseError, parseDiff } from "./diff/parse.js";
 export { filterFiles, skipReason } from "./diff/filters.js";
+export { DEFAULT_LIMITS, prepareDiff } from "./diff/prepare.js";
+export type { DiffLimits, DiffStats, PreparedDiff } from "./diff/prepare.js";
 export type {
   DiffLine,
   FileDiff,
