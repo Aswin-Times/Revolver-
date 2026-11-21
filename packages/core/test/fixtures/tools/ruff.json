@@ -1,0 +1,419 @@
+[
+ {
+  "cell": null,
+  "code": "invalid-syntax",
+  "end_location": {
+   "column": 13,
+   "row": 1
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/broken.py",
+  "fix": null,
+  "location": {
+   "column": 12,
+   "row": 1
+  },
+  "message": "Expected a parameter or the end of the parameter list",
+  "name": "invalid-syntax",
+  "noqa_row": null,
+  "severity": "error",
+  "url": null
+ },
+ {
+  "cell": null,
+  "code": "invalid-syntax",
+  "end_location": {
+   "column": 1,
+   "row": 2
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/broken.py",
+  "fix": null,
+  "location": {
+   "column": 13,
+   "row": 1
+  },
+  "message": "Expected `)`, found newline",
+  "name": "invalid-syntax",
+  "noqa_row": null,
+  "severity": "error",
+  "url": null
+ },
+ {
+  "cell": null,
+  "code": "C901",
+  "end_location": {
+   "column": 17,
+   "row": 1
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/report.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 1
+  },
+  "message": "`build_report` is too complex (31 > 10)",
+  "name": "complex-structure",
+  "noqa_row": 1,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/complex-structure"
+ },
+ {
+  "cell": null,
+  "code": "PLR0913",
+  "end_location": {
+   "column": 17,
+   "row": 1
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/report.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 1
+  },
+  "message": "Too many arguments in function definition (6 > 5)",
+  "name": "too-many-arguments",
+  "noqa_row": 1,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/too-many-arguments"
+ },
+ {
+  "cell": null,
+  "code": "PLR0912",
+  "end_location": {
+   "column": 17,
+   "row": 1
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/report.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 1
+  },
+  "message": "Too many branches (30 > 12)",
+  "name": "too-many-branches",
+  "noqa_row": 1,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/too-many-branches"
+ },
+ {
+  "cell": null,
+  "code": "PLR0915",
+  "end_location": {
+   "column": 17,
+   "row": 1
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/report.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 1
+  },
+  "message": "Too many statements (61 > 50)",
+  "name": "too-many-statements",
+  "noqa_row": 1,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/too-many-statements"
+ },
+ {
+  "cell": null,
+  "code": "F401",
+  "end_location": {
+   "column": 10,
+   "row": 1
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": {
+   "applicability": "safe",
+   "edits": [
+    {
+     "content": "",
+     "end_location": {
+      "column": 1,
+      "row": 2
+     },
+     "location": {
+      "column": 1,
+      "row": 1
+     }
+    }
+   ],
+   "message": "Remove unused import: `os`"
+  },
+  "location": {
+   "column": 8,
+   "row": 1
+  },
+  "message": "`os` imported but unused",
+  "name": "unused-import",
+  "noqa_row": 1,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/unused-import"
+ },
+ {
+  "cell": null,
+  "code": "S608",
+  "end_location": {
+   "column": 68,
+   "row": 8
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 25,
+   "row": 8
+  },
+  "message": "Possible SQL injection vector through string-based query construction",
+  "name": "hardcoded-sql-expression",
+  "noqa_row": 8,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/hardcoded-sql-expression"
+ },
+ {
+  "cell": null,
+  "code": "S602",
+  "end_location": {
+   "column": 20,
+   "row": 12
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 12
+  },
+  "message": "`subprocess` call with `shell=True` identified, security issue",
+  "name": "subprocess-popen-with-shell-equals-true",
+  "noqa_row": 12,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/subprocess-popen-with-shell-equals-true"
+ },
+ {
+  "cell": null,
+  "code": "S307",
+  "end_location": {
+   "column": 21,
+   "row": 13
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 12,
+   "row": 13
+  },
+  "message": "Use of possibly insecure function; consider using `ast.literal_eval`",
+  "name": "suspicious-eval-usage",
+  "noqa_row": 13,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/suspicious-eval-usage"
+ },
+ {
+  "cell": null,
+  "code": "B006",
+  "end_location": {
+   "column": 24,
+   "row": 16
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": {
+   "applicability": "unsafe",
+   "edits": [
+    {
+     "content": "None",
+     "end_location": {
+      "column": 24,
+      "row": 16
+     },
+     "location": {
+      "column": 22,
+      "row": 16
+     }
+    },
+    {
+     "content": "    if cache is None:\n        cache = {}\n",
+     "end_location": {
+      "column": 1,
+      "row": 17
+     },
+     "location": {
+      "column": 1,
+      "row": 17
+     }
+    }
+   ],
+   "message": "Replace with `None`; initialize within function"
+  },
+  "location": {
+   "column": 22,
+   "row": 16
+  },
+  "message": "Do not use mutable data structures for argument defaults",
+  "name": "mutable-argument-default",
+  "noqa_row": 16,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/mutable-argument-default"
+ },
+ {
+  "cell": null,
+  "code": "S301",
+  "end_location": {
+   "column": 34,
+   "row": 18
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 16,
+   "row": 18
+  },
+  "message": "`pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue",
+  "name": "suspicious-pickle-usage",
+  "noqa_row": 18,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/suspicious-pickle-usage"
+ },
+ {
+  "cell": null,
+  "code": "E722",
+  "end_location": {
+   "column": 11,
+   "row": 19
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 19
+  },
+  "message": "Do not use bare `except`",
+  "name": "bare-except",
+  "noqa_row": 19,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/bare-except"
+ },
+ {
+  "cell": null,
+  "code": "S110",
+  "end_location": {
+   "column": 13,
+   "row": 20
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 19
+  },
+  "message": "`try`-`except`-`pass` detected, consider logging the exception",
+  "name": "try-except-pass",
+  "noqa_row": 19,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/try-except-pass"
+ },
+ {
+  "cell": null,
+  "code": "BLE001",
+  "end_location": {
+   "column": 21,
+   "row": 26
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 12,
+   "row": 26
+  },
+  "message": "Do not catch blind exception: `Exception`",
+  "name": "blind-except",
+  "noqa_row": 26,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/blind-except"
+ },
+ {
+  "cell": null,
+  "code": "F841",
+  "end_location": {
+   "column": 11,
+   "row": 31
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": {
+   "applicability": "unsafe",
+   "edits": [
+    {
+     "content": "",
+     "end_location": {
+      "column": 1,
+      "row": 32
+     },
+     "location": {
+      "column": 1,
+      "row": 31
+     }
+    }
+   ],
+   "message": "Remove assignment to unused variable `unused`"
+  },
+  "location": {
+   "column": 5,
+   "row": 31
+  },
+  "message": "Local variable `unused` is assigned to but never used",
+  "name": "unused-variable",
+  "noqa_row": 31,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+ },
+ {
+  "cell": null,
+  "code": "ERA001",
+  "end_location": {
+   "column": 34,
+   "row": 32
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": {
+   "applicability": "displayonly",
+   "edits": [
+    {
+     "content": "",
+     "end_location": {
+      "column": 1,
+      "row": 33
+     },
+     "location": {
+      "column": 1,
+      "row": 32
+     }
+    }
+   ],
+   "message": "Remove commented-out code"
+  },
+  "location": {
+   "column": 5,
+   "row": 32
+  },
+  "message": "Found commented-out code",
+  "name": "commented-out-code",
+  "noqa_row": 32,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/commented-out-code"
+ },
+ {
+  "cell": null,
+  "code": "F821",
+  "end_location": {
+   "column": 24,
+   "row": 33
+  },
+  "filename": "C:/Temp/pr-mentor-test/repo/app/views.py",
+  "fix": null,
+  "location": {
+   "column": 12,
+   "row": 33
+  },
+  "message": "Undefined name `missing_name`",
+  "name": "undefined-name",
+  "noqa_row": 33,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+ }
+]

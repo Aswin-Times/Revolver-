@@ -2,11 +2,14 @@
  * Runs the real tools. Each block is skipped when its tool isn't installed, so `pnpm test`
  * works anywhere; CI installs all of them so these always run there.
  */
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseDiff } from "../../src/diff/parse.js";
 import type { FileDiff } from "../../src/diff/types.js";
 import { runCommand, ToolNotFoundError } from "../../src/static/exec.js";
 import { gitleaksTool } from "../../src/static/gitleaks.js";
+import { ruffTool } from "../../src/static/ruff.js";
 import type { ToolContext } from "../../src/static/tool.js";
 import { createWorkspace, type Workspace } from "../../src/static/workspace.js";
 
@@ -70,5 +73,41 @@ describe.skipIf(!(await installed("gitleaks", ["version"])))("gitleaks (real)", 
   it("reports nothing for a clean file", async () => {
     const ctx = await contextFor(newFile("app/ok.py", "def add(a, b):\n    return a + b\n"));
     expect((await gitleaksTool.run(ctx.workspace.files, ctx)).findings).toEqual([]);
+  });
+});
+
+const FLASK_SQLI = `from flask import Flask, request
+import sqlite3
+
+app = Flask(__name__)
+
+
+@app.route("/user")
+def user():
+    conn = sqlite3.connect("app.db")
+    user_id = request.args["id"]
+    return str(conn.execute(f"SELECT * FROM users WHERE id = {user_id}").fetchone())
+`;
+
+describe.skipIf(!(await installed("ruff")))("ruff (real)", () => {
+  it("finds SQL injection in a Flask route on the right line", async () => {
+    const ctx = await contextFor(newFile("app/routes.py", FLASK_SQLI));
+    const { findings } = await ruffTool.run(ctx.workspace.files, ctx);
+    expect(findings.find((f) => f.ruleId === "ruff/S608")).toMatchObject({
+      file: "app/routes.py",
+      line: 11,
+      category: "security",
+    });
+  });
+
+  it("ignores repo config that tries to switch rules off", async () => {
+    const ctx = await contextFor(newFile("app/routes.py", FLASK_SQLI));
+    // Without --isolated, this config really does silence S608 (checked against Ruff 0.17).
+    writeFileSync(
+      join(ctx.workspace.root, "ruff.toml"),
+      '[lint.per-file-ignores]\n"app/routes.py" = ["S608"]\n',
+    );
+    const { findings } = await ruffTool.run(ctx.workspace.files, ctx);
+    expect(findings.map((f) => f.ruleId)).toContain("ruff/S608");
   });
 });
