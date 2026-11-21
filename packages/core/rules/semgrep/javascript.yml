@@ -1,0 +1,308 @@
+# PR Mentor's JavaScript/TypeScript rules. Every rule carries student-facing metadata
+# (validated in test/static/semgrep.test.ts). Test cases live in javascript.js.
+rules:
+  - id: js-sql-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: SQL query built by inserting a value into the query text
+    patterns:
+      - pattern: $DB.$METHOD($QUERY, ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(query|execute|exec|raw|run|all|get|prepare|each)$
+      # The query must contain a value: a template with ${...} or string concatenation.
+      - metavariable-pattern:
+          metavariable: $QUERY
+          pattern-either:
+            - pattern: "`...${$X}...`"
+            - pattern: $A + $B
+      # ...and must actually be SQL, so HTTP calls like api.get(`/users/${id}`) don't match.
+      - metavariable-regex:
+          metavariable: $QUERY
+          regex: (?is)^[`'"]\s*(select|insert|update|delete|replace|with)\b
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: SQL query built by inserting a value into the query text
+      explanation: >-
+        This query is built by putting a value straight into the SQL string. If that value
+        comes from a user, they can change the query itself (SQL injection) and read or
+        delete data they shouldn't. Pass values separately and let the database driver fill
+        in the placeholders safely.
+      suggestion: |-
+        ```js
+        db.query("SELECT * FROM users WHERE id = ?", [id]);
+        ```
+      references:
+        - title: OWASP SQL Injection Prevention Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
+  - id: js-command-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Shell command built from a variable
+    patterns:
+      - pattern-either:
+          # Destructured import: const { exec } = require("child_process")
+          - pattern: $EXEC($CMD, ...)
+          - pattern: require("child_process").$EXEC($CMD, ...)
+          - patterns:
+              - pattern: $CP.$EXEC($CMD, ...)
+              # Only child-process-like objects, so regex.exec(text) isn't flagged.
+              - metavariable-regex:
+                  metavariable: $CP
+                  regex: ^(cp|child|childProcess|child_process|proc|shell)$
+      - metavariable-regex:
+          metavariable: $EXEC
+          regex: ^(exec|execSync)$
+      - pattern-not: $EXEC("...", ...)
+      - pattern-not: $CP.$EXEC("...", ...)
+      - pattern-not: require("child_process").$EXEC("...", ...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: Shell command built from a variable
+      explanation: >-
+        `exec` runs its string through the system shell. If part of it comes from a user,
+        input like `; rm -rf ~` runs as a second command (command injection). Use `execFile`
+        or `spawn` with an array of arguments so no shell interprets them.
+      suggestion: |-
+        ```js
+        const { execFile } = require("node:child_process");
+
+        execFile("ping", ["-c", "1", host], (error, stdout) => {
+          // ...
+        });
+        ```
+      references:
+        - title: OWASP OS Command Injection Defense Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+
+  - id: js-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: eval or new Function on a value that isn't a fixed string
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(..., $X)
+      - pattern-not: eval("...")
+      - pattern-not: new Function(..., "...")
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: "`eval`/`new Function` runs whatever code it is given"
+      explanation: >-
+        `eval` and `new Function` run arbitrary JavaScript. If the text can come from a user,
+        they can run any code they like in your app. To read data, use `JSON.parse`; to pick
+        behaviour by name, use an object that maps names to functions.
+      suggestion: |-
+        ```js
+        const data = JSON.parse(text);
+        // or
+        const actions = { add, remove };
+        actions[name]?.();
+        ```
+      references:
+        - title: "MDN: Never use eval()!"
+          url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_direct_eval!
+
+  - id: js-dom-xss
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: HTML built from a variable is written into the page
+    patterns:
+      - pattern-either:
+          - pattern: $EL.innerHTML = $X
+          - pattern: $EL.outerHTML = $X
+          - pattern: document.write($X)
+          - pattern: document.writeln($X)
+          - pattern: $EL.insertAdjacentHTML($POS, $X)
+      - pattern-not: $EL.innerHTML = "..."
+      - pattern-not: $EL.outerHTML = "..."
+      - pattern-not: document.write("...")
+      - pattern-not: document.writeln("...")
+      - pattern-not: $EL.insertAdjacentHTML($POS, "...")
+    metadata:
+      category: security
+      severity: high
+      confidence: MEDIUM
+      title: HTML from a variable is written straight into the page (XSS)
+      explanation: >-
+        Setting `innerHTML` (or using `document.write`) with a value turns any HTML in it into
+        real page content. If the value contains user input, an attacker can inject a
+        `<script>` or an `onerror=` handler and run code in other users' browsers (XSS).
+        Use `textContent` for text, or build elements with `createElement`.
+      suggestion: |-
+        ```js
+        el.textContent = name;
+        ```
+      references:
+        - title: OWASP DOM based XSS Prevention Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+
+  - id: js-express-reflected-xss
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Request data sent back as HTML without escaping
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($BODY)
+              - pattern: $RES.write($BODY)
+          - focus-metavariable: $BODY
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: escape(...)
+          - pattern: escapeHtml(...)
+          - pattern: $LIB.escape(...)
+          - pattern: DOMPurify.sanitize(...)
+          - pattern: encodeURIComponent(...)
+          - pattern: Number(...)
+          - pattern: parseInt(...)
+    metadata:
+      category: security
+      severity: high
+      confidence: MEDIUM
+      title: Request data is sent back as HTML without escaping (XSS)
+      explanation: >-
+        Values from `req.query`, `req.params` or `req.body` are controlled by whoever sends
+        the request. Putting them into an HTML response unescaped lets an attacker craft a
+        link that runs JavaScript in your users' browsers (reflected XSS). Escape the value,
+        render it through a template engine that escapes by default, or send JSON.
+      suggestion: |-
+        ```js
+        const escapeHtml = require("escape-html");
+
+        res.send(`<h1>Hello ${escapeHtml(req.query.name)}</h1>`);
+        ```
+      references:
+        - title: OWASP Cross Site Scripting Prevention Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+
+  - id: js-express-route-without-auth
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Route that changes data has no auth middleware
+    patterns:
+      - pattern-either:
+          - pattern: $APP.$METHOD($PATH, ($REQ, $RES) => { ... })
+          - pattern: $APP.$METHOD($PATH, async ($REQ, $RES) => { ... })
+          - pattern: $APP.$METHOD($PATH, function ($REQ, $RES) { ... })
+          - pattern: $APP.$METHOD($PATH, async function ($REQ, $RES) { ... })
+      - metavariable-regex:
+          metavariable: $APP
+          regex: ^(app|router|api|server)$
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(post|put|patch|delete)$
+    metadata:
+      category: security
+      severity: high
+      confidence: LOW
+      title: Route that changes data has no authentication check
+      explanation: >-
+        This route can create, change or delete data, but no middleware runs before the
+        handler to check who is calling it. Unless authentication is applied somewhere else
+        (for example `app.use(requireAuth)` earlier), anyone who finds the URL can use it.
+        Add an auth middleware to the route.
+      suggestion: |-
+        ```js
+        app.delete("/users/:id", requireAuth, (req, res) => {
+          // only logged-in (and authorised) users get here
+        });
+        ```
+      references:
+        - title: OWASP Authorization Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+
+  - id: js-hardcoded-jwt-secret
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: JWT signed with a secret written in the code
+    pattern-either:
+      - pattern: $JWT.sign($PAYLOAD, "...", ...)
+      - pattern: $JWT.verify($TOKEN, "...", ...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: JWT signing secret is written in the code
+      explanation: >-
+        Anyone who knows this secret can create valid tokens and log in as any user. Because
+        it's in the code, it's in git history and every copy of the repo. Load it from an
+        environment variable and use a long random value.
+      suggestion: |-
+        ```js
+        const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        ```
+      references:
+        - title: OWASP JSON Web Token Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+
+  - id: js-unsafe-deserialization
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: node-serialize unserialize can run code
+    pattern-either:
+      - pattern: $SER.unserialize(...)
+      - pattern: require("node-serialize").unserialize(...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: MEDIUM
+      title: "`unserialize` can run code hidden in the data"
+      explanation: >-
+        `node-serialize` can restore functions from the data and call them, so a crafted
+        cookie or request body runs code on your server. Store plain data and read it with
+        `JSON.parse`.
+      suggestion: |-
+        ```js
+        const data = JSON.parse(cookie);
+        ```
+      references:
+        - title: OWASP Deserialization Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+  - id: js-tls-verification-disabled
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: TLS certificate checking turned off
+    pattern-either:
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+      - patterns:
+          - pattern: |
+              { ..., $KEY: false, ... }
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: ^rejectUnauthorized$
+          - focus-metavariable: $KEY
+    metadata:
+      category: security
+      severity: high
+      confidence: HIGH
+      title: HTTPS certificate checks are turned off
+      explanation: >-
+        Turning off certificate checks makes your app accept any certificate, so anyone on
+        the network can pretend to be the server and read or change the traffic. Leave
+        verification on; for a self-signed certificate, pass it with the `ca` option instead.
+      suggestion: |-
+        ```js
+        const agent = new https.Agent({ ca: fs.readFileSync("my-ca.pem") });
+        ```
+      references:
+        - title: "Node.js docs: tls.connect options"
+          url: https://nodejs.org/api/tls.html#tlsconnectoptions-callback

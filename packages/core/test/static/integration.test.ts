@@ -10,6 +10,7 @@ import type { FileDiff } from "../../src/diff/types.js";
 import { runCommand, ToolNotFoundError } from "../../src/static/exec.js";
 import { gitleaksTool } from "../../src/static/gitleaks.js";
 import { ruffTool } from "../../src/static/ruff.js";
+import { SEMGREP_RULES_DIR, semgrepTool } from "../../src/static/semgrep.js";
 import type { ToolContext } from "../../src/static/tool.js";
 import { createWorkspace, type Workspace } from "../../src/static/workspace.js";
 
@@ -109,5 +110,51 @@ describe.skipIf(!(await installed("ruff")))("ruff (real)", () => {
     );
     const { findings } = await ruffTool.run(ctx.workspace.files, ctx);
     expect(findings.map((f) => f.ruleId)).toContain("ruff/S608");
+  });
+});
+
+describe.skipIf(!(await installed("semgrep")))("semgrep (real)", { timeout: 180_000 }, () => {
+  it("finds SQL injection in a Flask route with our rules", async () => {
+    const ctx = await contextFor(newFile("app/routes.py", FLASK_SQLI));
+    const { findings } = await semgrepTool.run(ctx.workspace.files, ctx);
+    expect(findings.map((f) => [f.file, f.line, f.ruleId])).toContainEqual([
+      "app/routes.py",
+      11,
+      "semgrep/py-sql-injection",
+    ]);
+  });
+
+  it("covers TypeScript too", async () => {
+    const ctx = await contextFor(
+      newFile(
+        "src/users.ts",
+        [
+          'import type { Pool } from "pg";',
+          "",
+          "export async function findUser(db: Pool, id: string) {",
+          "  return db.query(`SELECT * FROM users WHERE id = ${id}`);",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    );
+    const { findings } = await semgrepTool.run(ctx.workspace.files, ctx);
+    expect(findings.map((f) => [f.line, f.ruleId])).toEqual([[4, "semgrep/js-sql-injection"]]);
+  });
+
+  // One rule file at a time: semgrep --test loads configs in parallel, which races on
+  // ~/.semgrep/settings.yml on Windows.
+  it.each([
+    ["python.yml", "python.py"],
+    ["javascript.yml", "javascript.js"],
+    ["react.yml", "react.jsx"],
+  ])("passes the annotated test cases for %s", async (config, target) => {
+    const result = await runCommand(
+      "semgrep",
+      ["--test", "--metrics=off", "--disable-version-check", "--config", config, target],
+      { cwd: SEMGREP_RULES_DIR, timeoutMs: 170_000 },
+    );
+    expect(result.stdout + result.stderr).toContain("All tests passed");
+    expect(result.exitCode).toBe(0);
   });
 });

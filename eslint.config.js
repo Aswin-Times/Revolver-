@@ -4,7 +4,14 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**", "**/test/fixtures/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/coverage/**",
+      "**/test/fixtures/**",
+      // Deliberately vulnerable Semgrep test cases
+      "**/rules/semgrep/**",
+    ],
   },
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,

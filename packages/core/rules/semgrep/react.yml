@@ -1,0 +1,27 @@
+# PR Mentor's React rules. Test cases live in react.jsx.
+rules:
+  - id: react-dangerous-html
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: dangerouslySetInnerHTML with a value that isn't a fixed string
+    patterns:
+      - pattern: '<$EL dangerouslySetInnerHTML={{__html: $HTML}} />'
+      - pattern-not: '<$EL dangerouslySetInnerHTML={{__html: "..."}} />'
+    metadata:
+      category: security
+      severity: high
+      confidence: MEDIUM
+      title: "`dangerouslySetInnerHTML` with a value from a variable (XSS)"
+      explanation: >-
+        React escapes everything you render, except `dangerouslySetInnerHTML`. If this HTML
+        contains anything a user wrote, they can inject scripts that run in other users'
+        browsers (XSS). Render the text normally, or sanitize the HTML first.
+      suggestion: |-
+        ```jsx
+        import DOMPurify from "dompurify";
+
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />
+        ```
+      references:
+        - title: "React docs: dangerouslySetInnerHTML"
+          url: https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html

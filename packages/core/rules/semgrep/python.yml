@@ -1,0 +1,274 @@
+# PR Mentor's Python rules. Every rule carries student-facing metadata (validated in
+# test/static/semgrep.test.ts). Test cases live in python.py next to this file.
+rules:
+  - id: py-sql-injection
+    languages: [python]
+    severity: ERROR
+    message: SQL query built by inserting a value into the query text
+    patterns:
+      - metavariable-regex:
+          metavariable: $EXEC
+          regex: ^(execute|executemany|executescript|raw|read_sql|read_sql_query)$
+      - pattern-either:
+          - pattern: $CUR.$EXEC(f"...", ...)
+          - pattern: $CUR.$EXEC("..." % $X, ...)
+          - pattern: $CUR.$EXEC("..." + $X + ..., ...)
+          - pattern: $CUR.$EXEC("...".format(...), ...)
+          - patterns:
+              - pattern-inside: |
+                  $Q = f"..."
+                  ...
+              - pattern: $CUR.$EXEC($Q, ...)
+          - patterns:
+              - pattern-inside: |
+                  $Q = "..." % $X
+                  ...
+              - pattern: $CUR.$EXEC($Q, ...)
+          - patterns:
+              - pattern-inside: |
+                  $Q = "..." + $X + ...
+                  ...
+              - pattern: $CUR.$EXEC($Q, ...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: SQL query built by inserting a value into the query text
+      explanation: >-
+        This query is built by putting a value straight into the SQL string. If that value
+        comes from a user, they can change the query itself (SQL injection) and read or
+        delete data they shouldn't. Pass values separately and let the database driver fill
+        in the placeholders safely.
+      suggestion: |-
+        ```python
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        ```
+      references:
+        - title: OWASP SQL Injection Prevention Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    options:
+      symbolic_propagation: true
+
+  - id: py-command-injection
+    languages: [python]
+    severity: ERROR
+    message: Shell command built from a variable
+    pattern-either:
+      - patterns:
+          - pattern: subprocess.$FUNC($CMD, ..., shell=True, ...)
+          - pattern-not: subprocess.$FUNC("...", ..., shell=True, ...)
+      - patterns:
+          - pattern-either:
+              - pattern: os.system($CMD)
+              - pattern: os.popen($CMD, ...)
+          - pattern-not: os.system("...")
+          - pattern-not: os.popen("...", ...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: Shell command built from a variable
+      explanation: >-
+        This command goes through the system shell with a value mixed in. If that value
+        comes from a user, input like `; rm -rf ~` runs as a second command (command
+        injection). Pass the program and its arguments as a list so no shell ever
+        interprets them.
+      suggestion: |-
+        ```python
+        subprocess.run(["ping", "-c", "1", host], check=True)
+        ```
+      references:
+        - title: OWASP OS Command Injection Defense Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+
+  - id: py-eval-exec
+    languages: [python]
+    severity: ERROR
+    message: eval/exec on a value that isn't a fixed string
+    patterns:
+      - pattern-either:
+          - pattern: eval($X, ...)
+          - pattern: exec($X, ...)
+      - pattern-not: eval("...", ...)
+      - pattern-not: exec("...", ...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: "`eval`/`exec` runs whatever code it is given"
+      explanation: >-
+        `eval` and `exec` run arbitrary Python. If the text can come from a user, they can
+        run any code they like on your machine. To read a Python literal (a number, list or
+        dict) use `ast.literal_eval`; to read JSON use `json.loads`.
+      suggestion: |-
+        ```python
+        import ast
+
+        value = ast.literal_eval(text)
+        ```
+      references:
+        - title: "Python docs: ast.literal_eval"
+          url: https://docs.python.org/3/library/ast.html#ast.literal_eval
+
+  - id: py-unsafe-deserialization
+    languages: [python]
+    severity: ERROR
+    message: Data loaded with a format that can run code
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: marshal.loads(...)
+      - pattern: jsonpickle.decode(...)
+      - patterns:
+          - pattern: yaml.load(...)
+          - pattern-not: yaml.load(..., Loader=yaml.SafeLoader, ...)
+          - pattern-not: yaml.load(..., Loader=yaml.CSafeLoader, ...)
+          - pattern-not: yaml.load(..., Loader=SafeLoader, ...)
+    metadata:
+      category: security
+      severity: high
+      confidence: HIGH
+      title: Data loaded with a format that can run code
+      explanation: >-
+        `pickle` (and `yaml.load` without a safe loader) can build arbitrary Python objects,
+        which lets specially crafted data run code when it's loaded. Only use them for data
+        your own program wrote and nobody else could change. For anything from users, files
+        or the network, use JSON or `yaml.safe_load`.
+      suggestion: |-
+        ```python
+        import json
+
+        data = json.loads(blob)
+        # or, for YAML:
+        data = yaml.safe_load(text)
+        ```
+      references:
+        - title: OWASP Deserialization Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+  - id: py-flask-template-injection
+    languages: [python]
+    severity: ERROR
+    message: Template built from a variable with render_template_string
+    patterns:
+      - pattern: flask.render_template_string($TEMPLATE, ...)
+      - pattern-not: flask.render_template_string("...", ...)
+    metadata:
+      category: security
+      severity: high
+      confidence: HIGH
+      title: Template built from a variable (template injection / XSS)
+      explanation: >-
+        Mixing user input into the template text means Jinja treats it as template code:
+        `{{ ... }}` in the input gets executed (server-side template injection) and HTML in
+        it reaches the browser unescaped (XSS). Keep the template fixed and pass values as
+        arguments; Jinja escapes them for you.
+      suggestion: |-
+        ```python
+        return render_template_string("<h1>Hello {{ name }}</h1>", name=name)
+        ```
+      references:
+        - title: OWASP Cross Site Scripting Prevention Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+
+  - id: py-flask-debug
+    languages: [python]
+    severity: WARNING
+    message: Flask debug mode turned on in code
+    pattern: $APP.run(..., debug=True, ...)
+    metadata:
+      category: security
+      severity: high
+      confidence: MEDIUM
+      title: Flask debug mode is switched on in code
+      explanation: >-
+        Flask's debugger lets anyone who can reach the app run Python code on the server.
+        It's great on your own machine, but hard-coding it means it ships to production too.
+        Turn it on with an environment variable instead.
+      suggestion: |-
+        ```python
+        app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
+        ```
+      references:
+        - title: "Flask docs: Debug Mode"
+          url: https://flask.palletsprojects.com/en/stable/quickstart/#debug-mode
+
+  - id: py-requests-verify-disabled
+    languages: [python]
+    severity: WARNING
+    message: HTTPS certificate checking turned off
+    pattern: requests.$METHOD(..., verify=False, ...)
+    metadata:
+      category: security
+      severity: high
+      confidence: HIGH
+      title: HTTPS certificate checks are turned off
+      explanation: >-
+        `verify=False` makes the request accept any certificate, so anyone on the network can
+        pretend to be the server and read or change the traffic. Leave verification on (it's
+        the default); if you use a self-signed certificate, point `verify` at it instead.
+      suggestion: |-
+        ```python
+        response = requests.get(url, timeout=10)
+        ```
+      references:
+        - title: "Requests docs: SSL certificate verification"
+          url: https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
+
+  - id: py-weak-password-hash
+    languages: [python]
+    severity: WARNING
+    message: Password hashed with a fast general-purpose hash
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.$ALG($PW, ...)
+          - pattern: hashlib.$ALG($PW.encode(...), ...)
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: ^(md5|sha1|sha224|sha256|sha384|sha512)$
+      - metavariable-regex:
+          metavariable: $PW
+          regex: (?i).*passw.*
+    metadata:
+      category: security
+      severity: high
+      confidence: MEDIUM
+      title: Password hashed with a fast hash like SHA-256 or MD5
+      explanation: >-
+        Fast hashes are designed to be quick, which lets an attacker who steals your database
+        try billions of guesses per second. Passwords need a deliberately slow hash with a
+        salt, such as bcrypt or argon2.
+      suggestion: |-
+        ```python
+        import bcrypt
+
+        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+        ok = bcrypt.checkpw(attempt.encode(), hashed)
+        ```
+      references:
+        - title: OWASP Password Storage Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+  - id: py-hardcoded-jwt-secret
+    languages: [python]
+    severity: ERROR
+    message: JWT signed with a secret written in the code
+    pattern-either:
+      - pattern: jwt.encode($PAYLOAD, "...", ...)
+      - pattern: jwt.decode($TOKEN, "...", ...)
+    metadata:
+      category: security
+      severity: critical
+      confidence: HIGH
+      title: JWT signing secret is written in the code
+      explanation: >-
+        Anyone who knows this secret can create valid tokens and log in as any user. Because
+        it's in the code, it's in git history and every copy of the repo. Load it from an
+        environment variable and use a long random value.
+      suggestion: |-
+        ```python
+        token = jwt.encode(payload, os.environ["JWT_SECRET"], algorithm="HS256")
+        ```
+      references:
+        - title: OWASP JSON Web Token Cheat Sheet
+          url: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
