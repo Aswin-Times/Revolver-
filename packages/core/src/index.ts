@@ -58,3 +58,5 @@ export { LlmFindingSchema, LlmReviewSchema, StaticVerdictSchema } from "./llm/sc
 export type { LlmFinding, LlmReview, StaticVerdict } from "./llm/schema.js";
 export { validateLlmReview } from "./llm/validate.js";
 export type { DroppedFinding, ValidatedReview, ValidVerdict } from "./llm/validate.js";
+export { buildPrompt, numberStaticFindings, SYSTEM_PROMPT } from "./llm/prompt.js";
+export type { PromptInput, ReviewPrompt, StaticItem } from "./llm/prompt.js";
