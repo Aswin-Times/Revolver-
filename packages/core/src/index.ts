@@ -60,3 +60,17 @@ export { validateLlmReview } from "./llm/validate.js";
 export type { DroppedFinding, ValidatedReview, ValidVerdict } from "./llm/validate.js";
 export { buildPrompt, numberStaticFindings, SYSTEM_PROMPT } from "./llm/prompt.js";
 export type { PromptInput, ReviewPrompt, StaticItem } from "./llm/prompt.js";
+export {
+  AnthropicLlmClient,
+  buildMessageParams,
+  LlmUnavailableError,
+  toLlmResponse,
+} from "./llm/client.js";
+export type {
+  AnthropicLike,
+  LlmClient,
+  LlmRequest,
+  LlmResponse,
+  LlmStopReason,
+  LlmUnavailableReason,
+} from "./llm/client.js";
