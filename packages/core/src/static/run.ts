@@ -1,5 +1,6 @@
 import type { FileDiff } from "../diff/types.js";
 import type { Finding } from "../finding.js";
+import { createRedactor } from "../redact.js";
 import type { RepoContext } from "../repo.js";
 import { keepOnAddedLines } from "./added-lines.js";
 import { eslintTool } from "./eslint.js";
@@ -40,6 +41,11 @@ export interface StaticPassResult {
   tools: ToolReport[];
   /** Changed files that couldn't be given to the tools (unsafe paths, tool configs). */
   skippedFiles: WorkspaceSkip[];
+  /**
+   * Redacts the secrets the tools found (plus well-known key formats) from any text, e.g.
+   * the diff before it is sent to Claude. A function, so raw secrets never serialize.
+   */
+  redact: (text: string) => string;
 }
 
 export interface StaticPassOptions {
@@ -78,59 +84,63 @@ export async function runStaticPass(
 
   try {
     const outcomes = await Promise.all(
-      selected.map(async (tool): Promise<{ report: ToolReport; findings: Finding[] }> => {
-        const targets = workspace.files.filter((file) => tool.appliesTo(file));
-        if (targets.length === 0) {
-          return {
-            report: {
-              tool: tool.name,
-              status: "skipped",
-              detail: "no changed files of a type it checks",
-              findings: 0,
-              durationMs: 0,
-            },
-            findings: [],
-          };
-        }
+      selected.map(
+        async (tool): Promise<{ report: ToolReport; findings: Finding[]; secrets?: string[] }> => {
+          const targets = workspace.files.filter((file) => tool.appliesTo(file));
+          if (targets.length === 0) {
+            return {
+              report: {
+                tool: tool.name,
+                status: "skipped",
+                detail: "no changed files of a type it checks",
+                findings: 0,
+                durationMs: 0,
+              },
+              findings: [],
+            };
+          }
 
-        const started = Date.now();
-        try {
-          const run = await tool.run(targets, ctx);
-          const kept = keepOnAddedLines(run.findings, files);
-          return {
-            report: {
-              tool: tool.name,
-              status: "ran",
-              ...(run.detail ? { detail: run.detail } : {}),
-              findings: kept.length,
-              durationMs: Date.now() - started,
-            },
-            findings: kept,
-          };
-        } catch (error) {
-          const missing = error instanceof ToolNotFoundError;
-          return {
-            report: {
-              tool: tool.name,
-              status: missing ? "skipped" : "failed",
-              detail: missing
-                ? INSTALL_HINTS[tool.name]
-                : error instanceof Error
-                  ? error.message
-                  : String(error),
-              findings: 0,
-              durationMs: Date.now() - started,
-            },
-            findings: [],
-          };
-        }
-      }),
+          const started = Date.now();
+          try {
+            const run = await tool.run(targets, ctx);
+            const kept = keepOnAddedLines(run.findings, files);
+            return {
+              report: {
+                tool: tool.name,
+                status: "ran",
+                ...(run.detail ? { detail: run.detail } : {}),
+                findings: kept.length,
+                durationMs: Date.now() - started,
+              },
+              findings: kept,
+              ...(run.secrets ? { secrets: run.secrets } : {}),
+            };
+          } catch (error) {
+            const missing = error instanceof ToolNotFoundError;
+            return {
+              report: {
+                tool: tool.name,
+                status: missing ? "skipped" : "failed",
+                detail: missing
+                  ? INSTALL_HINTS[tool.name]
+                  : error instanceof Error
+                    ? error.message
+                    : String(error),
+                findings: 0,
+                durationMs: Date.now() - started,
+              },
+              findings: [],
+            };
+          }
+        },
+      ),
     );
 
     return {
       findings: outcomes.flatMap((o) => o.findings).sort(byFileThenLine),
       tools: outcomes.map((o) => o.report),
       skippedFiles: workspace.skipped,
+      redact: createRedactor(outcomes.flatMap((o) => o.secrets ?? [])),
     };
   } finally {
     await workspace.dispose();

@@ -6,7 +6,7 @@ import { contextWith, fakeRunner, fakeWorkspace, toolFixture } from "./helpers.j
 
 const report = toolFixture("gitleaks.json");
 const { toRepoPath } = fakeWorkspace();
-const findings = parseGitleaksReport(report, toRepoPath);
+const { findings, secrets } = parseGitleaksReport(report, toRepoPath);
 const byLine = (file: string, line: number) => {
   const found = findings.find((f) => f.file === file && f.line === line);
   if (!found) throw new Error(`no finding at ${file}:${line}`);
@@ -28,6 +28,11 @@ describe("parseGitleaksReport", () => {
       expect(serialized).not.toContain(leak.Secret);
       expect(serialized).not.toContain(leak.Match);
     }
+  });
+
+  it("hands back the raw secrets separately, so they can be redacted from the diff", () => {
+    const raw = (JSON.parse(report) as { Secret: string }[]).map((leak) => leak.Secret);
+    expect([...secrets].sort()).toEqual([...new Set(raw)].sort());
   });
 
   it("shows the redacted secret so the student knows which key leaked", () => {
@@ -58,12 +63,12 @@ describe("parseGitleaksReport", () => {
   });
 
   it("skips leaks in files outside the workspace", () => {
-    expect(parseGitleaksReport(report, () => undefined)).toEqual([]);
+    expect(parseGitleaksReport(report, () => undefined).findings).toEqual([]);
   });
 
   it("returns no findings for an empty report", () => {
-    expect(parseGitleaksReport("[]", toRepoPath)).toEqual([]);
-    expect(parseGitleaksReport("", toRepoPath)).toEqual([]);
+    expect(parseGitleaksReport("[]", toRepoPath)).toEqual({ findings: [], secrets: [] });
+    expect(parseGitleaksReport("", toRepoPath)).toEqual({ findings: [], secrets: [] });
   });
 
   it("throws ToolError for output that isn't a Gitleaks JSON report", () => {
@@ -77,6 +82,7 @@ describe("gitleaksTool", () => {
     const runner = fakeRunner({ stdout: report });
     const result = await gitleaksTool.run([], contextWith(runner));
     expect(result.findings).toHaveLength(3);
+    expect(result.secrets).toHaveLength(3);
     expect(runner.calls[0]?.command).toBe("gitleaks");
     expect(runner.calls[0]?.args).toContain(fakeWorkspace().root);
   });

@@ -116,12 +116,15 @@ function toFinding(leak: Leak, file: string): Finding {
   };
 }
 
-/** Parse a Gitleaks JSON report. Raw secrets never leave this function. */
+/**
+ * Parse a Gitleaks JSON report. Findings never contain a raw secret; the raw values come
+ * back separately in `secrets`, only so the diff can be redacted before Claude sees it.
+ */
 export function parseGitleaksReport(
   json: string,
   toRepoPath: (toolPath: string) => string | undefined,
-): Finding[] {
-  if (json.trim() === "") return [];
+): { findings: Finding[]; secrets: string[] } {
+  if (json.trim() === "") return { findings: [], secrets: [] };
   let data: unknown;
   try {
     data = JSON.parse(json);
@@ -131,10 +134,11 @@ export function parseGitleaksReport(
   const parsed = z.array(LeakSchema).safeParse(data);
   if (!parsed.success) throw new ToolError("gitleaks printed JSON in an unexpected shape");
 
-  return parsed.data.flatMap((leak) => {
+  const findings = parsed.data.flatMap((leak) => {
     const file = toRepoPath(leak.File);
     return file ? [toFinding(leak, file)] : [];
   });
+  return { findings, secrets: [...new Set(parsed.data.map((leak) => leak.Secret))] };
 }
 
 export const gitleaksTool: StaticTool = {
@@ -156,6 +160,6 @@ export const gitleaksTool: StaticTool = {
       "--max-target-megabytes",
       "5",
     ]);
-    return { findings: parseGitleaksReport(result.stdout, ctx.workspace.toRepoPath) };
+    return parseGitleaksReport(result.stdout, ctx.workspace.toRepoPath);
   },
 };

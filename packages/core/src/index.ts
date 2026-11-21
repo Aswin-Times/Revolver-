@@ -7,7 +7,12 @@ export {
   SourceSchema,
 } from "./finding.js";
 export type { Category, Finding, Reference, Severity, Source } from "./finding.js";
-export { redactSecret } from "./redact.js";
+export {
+  createRedactor,
+  redactKnownSecrets,
+  redactSecret,
+  redactSecretPatterns,
+} from "./redact.js";
 export type { RepoContext } from "./repo.js";
 
 export { DEFAULT_TOOLS, runStaticPass } from "./static/run.js";

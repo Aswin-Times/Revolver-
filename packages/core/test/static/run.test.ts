@@ -55,16 +55,26 @@ interface FakeToolOptions {
   ext?: RegExp;
   findings?: Finding[];
   error?: Error;
+  secrets?: string[];
   seen?: { files: WorkspaceFile[]; dir: string }[];
 }
 
-function fakeTool({ name, ext = /./, findings = [], error, seen }: FakeToolOptions): StaticTool {
+function fakeTool({
+  name,
+  ext = /./,
+  findings = [],
+  error,
+  secrets,
+  seen,
+}: FakeToolOptions): StaticTool {
   return {
     name,
     appliesTo: (file) => ext.test(file.path),
     run(toolFiles, ctx) {
       seen?.push({ files: toolFiles, dir: ctx.workspace.dir });
-      return error ? Promise.reject(error) : Promise.resolve({ findings });
+      return error
+        ? Promise.reject(error)
+        : Promise.resolve({ findings, ...(secrets ? { secrets } : {}) });
     },
   };
 }
@@ -147,6 +157,15 @@ describe("runStaticPass", () => {
   it("lists files that couldn't be copied into the workspace", async () => {
     const result = await runStaticPass(files, repo, { registry: [] });
     expect(result.skippedFiles).toEqual([{ path: "../evil.py", reason: "unsafe-path" }]);
+  });
+
+  it("returns a redact() that hides the secrets tools found, and never serializes them", async () => {
+    const secret = "s3cr3t-value-that-is-long-1234";
+    const result = await runStaticPass(files, repo, {
+      registry: [fakeTool({ name: "gitleaks", secrets: [secret] })],
+    });
+    expect(result.redact(`token = "${secret}"`)).toBe('token = "****1234"');
+    expect(JSON.stringify(result)).not.toContain(secret);
   });
 
   it("deletes the workspace afterwards, even when a tool throws", async () => {

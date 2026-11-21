@@ -210,5 +210,6 @@ describe.skipIf(!allInstalled)("runStaticPass with every real tool", { timeout: 
       ]),
     );
     expect(JSON.stringify(result)).not.toContain(awsKey);
+    expect(result.redact(read["app/routes.py"] ?? "")).not.toContain(awsKey);
   });
 });
