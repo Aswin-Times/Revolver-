@@ -10,6 +10,7 @@ import type { FileDiff } from "../../src/diff/types.js";
 import { runCommand, ToolNotFoundError } from "../../src/static/exec.js";
 import { gitleaksTool } from "../../src/static/gitleaks.js";
 import { ruffTool } from "../../src/static/ruff.js";
+import { runStaticPass } from "../../src/static/run.js";
 import { SEMGREP_RULES_DIR, semgrepTool } from "../../src/static/semgrep.js";
 import type { ToolContext } from "../../src/static/tool.js";
 import { createWorkspace, type Workspace } from "../../src/static/workspace.js";
@@ -163,5 +164,46 @@ describe.skipIf(!(await installed("semgrep")))("semgrep (real)", { timeout: 180_
     );
     expect(result.stdout + result.stderr).toContain("All tests passed");
     expect(result.exitCode).toBe(0);
+  });
+});
+
+const allInstalled =
+  (await installed("gitleaks", ["version"])) &&
+  (await installed("ruff")) &&
+  (await installed("semgrep"));
+
+describe.skipIf(!allInstalled)("runStaticPass with every real tool", { timeout: 240_000 }, () => {
+  it("runs all four tools on a mixed change and keeps findings on added lines", async () => {
+    const awsKey = ["AKIA", "QYLPMN5H", "HHFQZOXK"].join("");
+    const py = newFile(
+      "app/routes.py",
+      FLASK_SQLI.replace("app = Flask(__name__)", `app = Flask(__name__)\nAWS_KEY = "${awsKey}"`),
+    );
+    const js = newFile(
+      "web/run.js",
+      "export function run(req) {\n  return eval(req.query.code);\n}\n",
+    );
+    const read = { ...py.read, ...js.read };
+
+    const result = await runStaticPass([...py.files, ...js.files], {
+      readFile: (p) => Promise.resolve(read[p]),
+    });
+
+    expect(result.tools.map((t) => [t.tool, t.status])).toEqual([
+      ["gitleaks", "ran"],
+      ["semgrep", "ran"],
+      ["ruff", "ran"],
+      ["eslint", "ran"],
+    ]);
+    const ids = result.findings.map((f) => f.ruleId);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        "gitleaks/aws-access-token",
+        "semgrep/py-sql-injection",
+        "ruff/S608",
+        "eslint/no-eval",
+      ]),
+    );
+    expect(JSON.stringify(result)).not.toContain(awsKey);
   });
 });

@@ -10,6 +10,10 @@ export type { Category, Finding, Reference, Severity, Source } from "./finding.j
 export { redactSecret } from "./redact.js";
 export type { RepoContext } from "./repo.js";
 
+export { DEFAULT_TOOLS, runStaticPass } from "./static/run.js";
+export type { StaticPassOptions, StaticPassResult, ToolReport } from "./static/run.js";
+export type { ToolName } from "./static/tool.js";
+
 export { DiffParseError, parseDiff } from "./diff/parse.js";
 export { filterFiles, skipReason } from "./diff/filters.js";
 export { DEFAULT_LIMITS, prepareDiff } from "./diff/prepare.js";
