@@ -30,3 +30,14 @@ export type {
   SkipReason,
   SkippedFile,
 } from "./diff/types.js";
+
+export {
+  ConfigError,
+  DEFAULT_CONFIG,
+  EffortSchema,
+  loadConfig,
+  ReviewConfigSchema,
+} from "./config.js";
+export type { ConfigOverrides, Effort, ReviewConfig } from "./config.js";
+export { addUsage, costUsd, EMPTY_USAGE, PRICING } from "./cost.js";
+export type { ModelPricing, TokenUsage } from "./cost.js";
