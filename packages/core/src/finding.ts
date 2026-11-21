@@ -31,6 +31,8 @@ export const FindingSchema = z
     references: z.array(ReferenceSchema),
     confidence: z.number().min(0).max(1),
     source: SourceSchema,
+    /** Tool rule that produced the finding, e.g. `ruff/S608`. Used for dedupe and LLM review. */
+    ruleId: z.string().min(1).optional(),
   })
   .refine((f) => f.endLine === undefined || f.endLine >= f.line, {
     message: "endLine must be greater than or equal to line",

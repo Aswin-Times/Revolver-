@@ -36,6 +36,10 @@ describe("FindingSchema", () => {
     expect(FindingSchema.safeParse({ ...valid, line: 7, endLine: 7 }).success).toBe(true);
   });
 
+  it("keeps an optional ruleId", () => {
+    expect(FindingSchema.parse({ ...valid, ruleId: "ruff/S608" }).ruleId).toBe("ruff/S608");
+  });
+
   it("strips unknown keys instead of rejecting the finding", () => {
     const parsed = FindingSchema.parse({ ...valid, reasoning: "model scratchpad" });
     expect(parsed).not.toHaveProperty("reasoning");
@@ -55,6 +59,7 @@ describe("FindingSchema", () => {
     ["a title over 120 characters", { title: "x".repeat(121) }],
     ["an empty explanation", { explanation: "" }],
     ["an empty suggestion", { suggestion: "" }],
+    ["an empty ruleId", { ruleId: "" }],
     ["a reference with an empty title", { references: [{ title: "", url: "https://owasp.org" }] }],
     ["a plain http reference", { references: [{ title: "Docs", url: "http://example.com" }] }],
     [

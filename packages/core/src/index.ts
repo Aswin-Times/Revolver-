@@ -7,6 +7,7 @@ export {
   SourceSchema,
 } from "./finding.js";
 export type { Category, Finding, Reference, Severity, Source } from "./finding.js";
+export { redactSecret } from "./redact.js";
 
 export { DiffParseError, parseDiff } from "./diff/parse.js";
 export { filterFiles, skipReason } from "./diff/filters.js";
