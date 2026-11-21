@@ -27,3 +27,10 @@ export interface FileDiff {
   additions: number;
   deletions: number;
 }
+
+export type SkipReason = "lockfile" | "generated" | "vendored" | "binary" | "deleted";
+
+export interface SkippedFile {
+  path: string;
+  reason: SkipReason;
+}
