@@ -1,0 +1,20 @@
+{
+  "name": "@pr-mentor/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PR Mentor review engine: diff in, structured findings out. Knows nothing about GitHub.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

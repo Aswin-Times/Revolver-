@@ -1,0 +1,6 @@
+# Normalise source files to LF everywhere (Windows checkouts included)
+* text=auto eol=lf
+
+# Diff fixtures are test data: store and check out byte-for-byte
+*.diff -text
+*.patch -text
