@@ -26,8 +26,8 @@ export interface Workspace {
   files: WorkspaceFile[];
   skipped: WorkspaceSkip[];
   /** Map a path a tool reported (absolute, or relative to root) back to its repo path. */
-  toRepoPath(toolPath: string): string | undefined;
-  dispose(): Promise<void>;
+  toRepoPath: (toolPath: string) => string | undefined;
+  dispose: () => Promise<void>;
 }
 
 /**
