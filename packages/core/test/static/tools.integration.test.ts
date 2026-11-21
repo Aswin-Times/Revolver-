@@ -1,6 +1,7 @@
 /**
- * Runs the real tools. Each block is skipped when its tool isn't installed, so `pnpm test`
- * works anywhere; CI installs all of them so these always run there.
+ * Runs the real tools. Each block is skipped when its tool isn't installed, so the suite
+ * works anywhere. CI sets PR_MENTOR_REQUIRE_TOOLS=1, which turns a missing tool into a
+ * failure, so these tests can never be skipped there by accident.
  */
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -16,13 +17,17 @@ import type { ToolContext } from "../../src/static/tool.js";
 import { createWorkspace, type Workspace } from "../../src/static/workspace.js";
 
 async function installed(command: string, versionArgs = ["--version"]): Promise<boolean> {
+  let ok = false;
   try {
     const result = await runCommand(command, versionArgs, { cwd: ".", timeoutMs: 60_000 });
-    return result.exitCode === 0;
+    ok = result.exitCode === 0;
   } catch (error) {
-    if (error instanceof ToolNotFoundError) return false;
-    throw error;
+    if (!(error instanceof ToolNotFoundError)) throw error;
   }
+  if (!ok && process.env.PR_MENTOR_REQUIRE_TOOLS === "1") {
+    throw new Error(`${command} must be installed when PR_MENTOR_REQUIRE_TOOLS=1`);
+  }
+  return ok;
 }
 
 /** A diff that adds `content` as a brand-new file, plus a repo that serves it. */
