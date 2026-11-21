@@ -46,3 +46,15 @@ export {
 export type { ConfigOverrides, Effort, ReviewConfig } from "./config.js";
 export { addUsage, costUsd, EMPTY_USAGE, PRICING } from "./cost.js";
 export type { ModelPricing, TokenUsage } from "./cost.js";
+
+export {
+  isAllowedReferenceUrl,
+  REFERENCE_DOMAINS,
+  sanitizePlain,
+  sanitizeReferences,
+  sanitizeText,
+} from "./sanitize.js";
+export { LlmFindingSchema, LlmReviewSchema, StaticVerdictSchema } from "./llm/schema.js";
+export type { LlmFinding, LlmReview, StaticVerdict } from "./llm/schema.js";
+export { validateLlmReview } from "./llm/validate.js";
+export type { DroppedFinding, ValidatedReview, ValidVerdict } from "./llm/validate.js";
