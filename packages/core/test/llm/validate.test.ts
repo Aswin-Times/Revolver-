@@ -50,9 +50,9 @@ describe("validateLlmReview", () => {
         line: 12,
         source: "llm",
         category: "security",
-        references: [expect.objectContaining({ url: expect.stringContaining("owasp.org") })],
       }),
     ]);
+    expect(findings[0]?.references[0]?.url).toContain("owasp.org");
     expect(findings[0]).not.toHaveProperty("endLine");
   });
 
