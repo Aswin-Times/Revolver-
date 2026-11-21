@@ -1,7 +1,33 @@
 import { readFileSync } from "node:fs";
+import { parseDiff } from "../../src/diff/parse.js";
+import type { FileDiff } from "../../src/diff/types.js";
 import type { CommandResult, CommandRunner } from "../../src/static/exec.js";
 import type { ToolContext } from "../../src/static/tool.js";
-import type { Workspace } from "../../src/static/workspace.js";
+import { createWorkspace, type Workspace } from "../../src/static/workspace.js";
+
+/** The diff for adding `content` as a brand-new file. */
+export function newFileDiff(path: string, content: string): FileDiff {
+  const lines = content.replace(/\n$/, "").split("\n");
+  const [file] = parseDiff(
+    [
+      "--- /dev/null",
+      `+++ b/${path}`,
+      `@@ -0,0 +1,${lines.length} @@`,
+      ...lines.map((l) => `+${l}`),
+      "",
+    ].join("\n"),
+  );
+  if (!file) throw new Error(`could not build a diff for ${path}`);
+  return file;
+}
+
+/** A real workspace on disk holding the given new files. Remember to dispose() it. */
+export function realWorkspace(files: Record<string, string>): Promise<Workspace> {
+  return createWorkspace(
+    Object.entries(files).map(([path, content]) => newFileDiff(path, content)),
+    { readFile: (path) => Promise.resolve(files[path]) },
+  );
+}
 
 /** Reads a recorded tool output from test/fixtures/tools. */
 export const toolFixture = (name: string) =>

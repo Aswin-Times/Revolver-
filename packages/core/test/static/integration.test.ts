@@ -111,6 +111,13 @@ describe.skipIf(!(await installed("ruff")))("ruff (real)", () => {
     const { findings } = await ruffTool.run(ctx.workspace.files, ctx);
     expect(findings.map((f) => f.ruleId)).toContain("ruff/S608");
   });
+
+  it("ignores # noqa comments, so they can't hide a finding from the reviewer", async () => {
+    const silenced = FLASK_SQLI.replace(".fetchone())", ".fetchone())  # noqa: S608");
+    const ctx = await contextFor(newFile("app/routes.py", silenced));
+    const { findings } = await ruffTool.run(ctx.workspace.files, ctx);
+    expect(findings.map((f) => f.ruleId)).toContain("ruff/S608");
+  });
 });
 
 describe.skipIf(!(await installed("semgrep")))("semgrep (real)", { timeout: 180_000 }, () => {

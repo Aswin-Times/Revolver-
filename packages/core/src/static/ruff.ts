@@ -343,6 +343,8 @@ export const ruffTool: StaticTool = {
     const result = await runTool(ctx, "ruff", [
       "check",
       "--isolated",
+      // A `# noqa` silences the linter, not the reviewer: we still explain the issue.
+      "--ignore-noqa",
       "--no-cache",
       "--exit-zero",
       "--output-format",
