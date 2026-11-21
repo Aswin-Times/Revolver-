@@ -74,3 +74,7 @@ export type {
   LlmStopReason,
   LlmUnavailableReason,
 } from "./llm/client.js";
+export { fitToBudget } from "./llm/budget.js";
+export type { BudgetPlan } from "./llm/budget.js";
+export { runLlmPass } from "./llm/pass.js";
+export type { LlmPassInput, LlmPassResult, LlmReport } from "./llm/pass.js";
