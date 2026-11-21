@@ -1,0 +1,67 @@
+diff --git a/docs/same.md b/docs/moved.md
+similarity index 100%
+rename from docs/same.md
+rename to docs/moved.md
+diff --git a/logo.png b/logo.png
+index 1e3e230..b78a332 100644
+Binary files a/logo.png and b/logo.png differ
+diff --git a/remove_me.txt b/remove_me.txt
+deleted file mode 100644
+index ffb94b0..0000000
+--- a/remove_me.txt
++++ /dev/null
+@@ -1,2 +0,0 @@
+-temporary
+-file
+diff --git a/script.sh b/script.sh
+old mode 100644
+new mode 100755
+diff --git "a/src/caf\303\251.py" "b/src/caf\303\251.py"
+new file mode 100644
+index 0000000..9884f71
+--- /dev/null
++++ "b/src/caf\303\251.py"
+@@ -0,0 +1 @@
++print("café")
+diff --git a/src/calc.py b/src/calc.py
+index c4352f8..23f9cdf 100644
+--- a/src/calc.py
++++ b/src/calc.py
+@@ -1,6 +1,6 @@
+ line 1
+ line 2
+-line 3
++line three
+ line 4
+ line 5
+ line 6
+@@ -15,6 +15,7 @@ line 14
+ line 15
+ line 16
+ line 17
+-line 18
++line eighteen
++line 18.5
+ line 19
+ line 20
+diff --git a/src/new file.py b/src/new file.py
+new file mode 100644
+index 0000000..7d4290a
+--- /dev/null
++++ b/src/new file.py	
+@@ -0,0 +1 @@
++x = 1
+diff --git a/src/old_name.py b/src/new_name.py
+similarity index 59%
+rename from src/old_name.py
+rename to src/new_name.py
+index 7f3e542..b3f0c6a 100644
+--- a/src/old_name.py
++++ b/src/new_name.py
+@@ -1,5 +1,5 @@
+ def greet(name):
+-    return "hi " + name
++    return "hello " + name
+ 
+ 
+ def bye():
