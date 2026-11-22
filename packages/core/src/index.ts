@@ -82,3 +82,6 @@ export { mergeFindings } from "./review/merge.js";
 export type { MergeInput, MergeResult } from "./review/merge.js";
 export { rankFindings } from "./review/rank.js";
 export type { RankOptions } from "./review/rank.js";
+export { verifiedRepo } from "./repo/verify.js";
+export { reviewDiff } from "./review/review.js";
+export type { ReviewOptions, ReviewResult } from "./review/review.js";
