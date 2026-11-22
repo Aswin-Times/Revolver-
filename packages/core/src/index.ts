@@ -78,3 +78,7 @@ export { fitToBudget } from "./llm/budget.js";
 export type { BudgetPlan } from "./llm/budget.js";
 export { runLlmPass } from "./llm/pass.js";
 export type { LlmPassInput, LlmPassResult, LlmReport } from "./llm/pass.js";
+export { mergeFindings } from "./review/merge.js";
+export type { MergeInput, MergeResult } from "./review/merge.js";
+export { rankFindings } from "./review/rank.js";
+export type { RankOptions } from "./review/rank.js";
