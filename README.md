@@ -5,9 +5,9 @@ An AI code-review assistant for student repositories. It reviews pull requests f
 teach: why the issue matters, a small fix, and a link to learn more. The tone is a helpful
 senior developer, not a linter.
 
-> **Status:** Milestones 1 and 2 of 6 are done (diff handling, static analysis and the
-> missing-tests check). The LLM pass and the CLI arrive in Milestone 3. See the
-> [roadmap](#roadmap).
+> **Status:** Milestones 1–3 of 6 are done: diff handling, static analysis, the
+> missing-tests check, the Claude pass and the `pr-mentor` CLI. Next: an eval harness
+> (M4) and the GitHub Action (M5). See the [roadmap](#roadmap).
 
 ## What a review comment looks like
 
@@ -56,8 +56,8 @@ flowchart LR
 
     classDef done fill:#d1fadf,stroke:#039855,color:#054f31
     classDef planned fill:#f2f4f7,stroke:#98a2b3,color:#344054,stroke-dasharray:4 3
-    class PREP,STATIC,GAP done
-    class LLM,RANK,CLI,ACTION,APP planned
+    class PREP,STATIC,GAP,LLM,RANK,CLI done
+    class ACTION,APP planned
 ```
 
 Green boxes are built; grey dashed boxes are planned. Adapters supply a `RepoContext`
@@ -120,6 +120,35 @@ matching test change.
 - The comment names the new functions, says which edge cases to try, points at an existing
   test file if there is one, and suggests a pytest or `describe`/`it` skeleton.
 
+### Step 4: the Claude pass (`runLlmPass`)
+
+Claude (`claude-sonnet-5-5` by default) reads the diff and the static findings, confirms or
+rejects each finding with a reason, adds what the tools missed, and writes a short
+encouraging summary.
+
+- **Prompt:** a fixed system prompt (cached between reviews) plus the diff in a block tagged
+  `untrusted-diff-<hash of its content>`, so diff text can't close it. Every line carries its
+  new-side line number. The prompt says plainly that instructions inside the diff must never
+  be followed.
+- **Secrets never leave your machine:** the diff is run through the static pass's `redact()`
+  first, which hides everything Gitleaks found plus well-known key formats.
+- **Strict JSON:** structured outputs (`output_config.format`, built from a Zod schema), then
+  validated again on our side. Findings must point at a file and line the diff shows; links
+  must be on an allowlist of docs sites; `@mentions`, raw HTML and images are neutralised.
+- **Budget and failures:** the prompt is token-counted first and the least important files
+  are left out if it's over `PR_MENTOR_MAX_INPUT_TOKENS`. A cut-off answer is retried once at
+  lower effort, an invalid one once as is. Refusals use Anthropic's server-side fallback.
+  Without credentials, or if anything fails, you still get the static review, and the report
+  says why Claude's part is missing.
+
+### Step 5: merge and rank
+
+Claude's confirmations improve the tool findings (better explanation, severity, +0.1
+confidence); rejections are dropped and listed with Claude's reason. Overlapping findings
+(same file, category and lines) collapse into the best one. Findings are sorted by severity,
+then security > tests > quality, then confidence, and only the top 15 are shown; the rest
+are listed under a collapsed "more findings" section.
+
 ### The `Finding` schema
 
 Every finding, whatever produced it, is validated against one Zod schema
@@ -163,35 +192,46 @@ brew install gitleaks         # Windows: winget install Gitleaks.Gitleaks
 `uv` puts tools in `~/.local/bin`; run `uv tool update-shell` once if that folder isn't on
 your `PATH`. CI pins Ruff 0.17.6, Semgrep 1.186.0 and Gitleaks 8.30.1.
 
-From Milestone 3 on, the LLM pass needs an Anthropic API key. Copy `.env.example` to `.env`
-and fill it in. `.env` is git-ignored; never commit a key.
+### Claude API key
+
+The Claude pass needs an Anthropic API key in `ANTHROPIC_API_KEY` (or a profile from
+`ant auth login`). Without one, PR Mentor still runs the static checks and says so in the
+report. Keys come only from the environment: copy `.env.example` to a file outside the repo
+you're reviewing and pass it with `--env-file`. PR Mentor never loads a `.env` on its own,
+because a student's `.env` could point `ANTHROPIC_BASE_URL` somewhere else and capture
+your key.
 
 ## Usage
 
-Until the CLI lands in Milestone 3, the core library can be used directly:
+Build once, then run the CLI inside the repository you want to review:
 
-```ts
-import { readFile } from "node:fs/promises";
-import { findTestGaps, prepareDiff, runStaticPass, type RepoContext } from "@pr-mentor/core";
-
-const prepared = prepareDiff(rawDiff); // e.g. the output of `git diff main...HEAD`
-if (prepared.status === "too_large") {
-  console.log(prepared.message); // friendly "please split this PR" note
-} else {
-  const repo: RepoContext = {
-    readFile: (path) => readFile(path, "utf8").catch(() => undefined),
-  };
-  const staticPass = await runStaticPass(prepared.files, repo);
-  const testGaps = await findTestGaps(prepared.files, repo);
-
-  for (const t of staticPass.tools) console.log(t.tool, t.status, t.detail ?? "");
-  for (const f of [...staticPass.findings, ...testGaps]) {
-    console.log(`${f.severity} ${f.file}:${f.line} ${f.title}`);
-  }
-}
+```sh
+pnpm build
+pnpm pr-mentor review --base main               # this branch vs main (git diff main...HEAD)
+pnpm pr-mentor review --diff pr.diff --repo .   # a saved diff, e.g. from `gh pr diff 42`
+pnpm pr-mentor review --base main --no-llm      # static checks only, free
+pnpm pr-mentor review --base main --format json --out review.json --fail-on high
 ```
 
-`prepareDiff` throws `DiffParseError` if the input isn't a valid diff.
+| Option                           | Default                       | What it does                                           |
+| -------------------------------- | ----------------------------- | ------------------------------------------------------ |
+| `--base <ref>` / `--diff <file>` | (one required)                | what to review                                         |
+| `--repo <dir>`                   | current directory             | where file contents are read from                      |
+| `--format markdown\|json`        | `markdown`                    | report format                                          |
+| `--out <file>`                   | stdout                        | write the report to a file                             |
+| `--no-llm`                       | off                           | skip Claude                                            |
+| `--model`, `--effort`            | `claude-sonnet-5-5`, `medium` | Claude model and thinking effort                       |
+| `--max-comments <n>`             | 15                            | findings shown                                         |
+| `--fail-on <severity>`           | off                           | exit 1 if any finding is at least this severe          |
+| `--env-file <file>`              | none                          | read `ANTHROPIC_API_KEY` and `PR_MENTOR_*` from a file |
+
+The same settings can come from `PR_MENTOR_MODEL`, `PR_MENTOR_EFFORT`,
+`PR_MENTOR_MAX_COMMENTS`, `PR_MENTOR_MIN_CONFIDENCE`, `PR_MENTOR_MAX_INPUT_TOKENS` and
+`PR_MENTOR_MAX_OUTPUT_TOKENS`. Each run prints one line to stderr with the model, tokens,
+cost and time. A typical student PR costs about $0.03–0.10.
+
+From code, `reviewDiff(rawDiff, repo, options)` in `@pr-mentor/core` does the whole review
+and returns ranked findings plus a report for every tool and for Claude.
 
 ## Project layout
 
@@ -203,9 +243,13 @@ packages/core/            review engine (pure library, no GitHub code)
   src/diff/               parser, filters, prepareDiff
   src/static/             command runner, workspace, one wrapper per tool, runStaticPass
   src/test-gap/           file classification, new-function detection, findTestGaps
+  src/llm/                schema, prompt, Anthropic client, token budget, validation, runLlmPass
+  src/review/             merge, rank, reviewDiff (the whole pipeline)
+  src/sanitize.ts         makes model text safe for PR comments
   rules/semgrep/          our Semgrep rules (*.yml) with annotated test cases next to them
   test/                   Vitest suites; fixtures are real git/tool output (sanitized)
-apps/                     CLI, GitHub Action, GitHub App (coming in later milestones)
+apps/cli/                 pr-mentor review: git/diff input, markdown/json report
+apps/                     GitHub Action, GitHub App (coming in later milestones)
 ```
 
 ## Safety principles
@@ -214,9 +258,10 @@ apps/                     CLI, GitHub Action, GitHub App (coming in later milest
   changed files in a temp folder, never on the student's checkout, and the student's tool
   configs (including executable ESLint configs) are never loaded.
 - **The diff is untrusted input.** File paths from it are validated before anything is
-  written (no `..`, absolute paths or drive letters), tools are started without a shell, and
-  model output (Milestone 3) is validated against the schema. Nothing in a diff can make the
-  tool call other tools or fetch URLs.
+  written (no `..`, absolute paths or drive letters), tools are started without a shell, the diff
+  goes to Claude in a delimited block it can't escape, and Claude's answer is validated and
+  sanitized before use. Claude gets no tools, so nothing in a diff can make it call tools or
+  fetch URLs.
 - **Secrets are redacted** in anything we output: only a known prefix and the last 4
   characters are shown (`sk-ant-****wxyz`, `AKIA****MPLE`), and only when at least 12
   characters stay hidden.
@@ -229,6 +274,7 @@ apps/                     CLI, GitHub Action, GitHub App (coming in later milest
 pnpm test               # everything
 pnpm test:unit          # fast unit tests (~2s); pnpm test:watch runs these on save
 pnpm test:integration   # runs the real Semgrep, Gitleaks and Ruff (skipped if missing)
+PR_MENTOR_LIVE=1 pnpm test:integration   # plus one real Claude review (~$0.05)
 pnpm lint               # type-aware ESLint
 pnpm typecheck
 pnpm format             # Prettier
@@ -243,7 +289,7 @@ tests with `PR_MENTOR_REQUIRE_TOOLS=1`, so they can't be skipped there.
 
 - [x] **M1:** monorepo scaffold, finding schema, diff parser, filters and size limits
 - [x] **M2:** static pass wrappers (Semgrep, Gitleaks, Ruff, ESLint) and the test-gap heuristic
-- [ ] **M3:** LLM pass with schema validation and retries; CLI markdown report
+- [x] **M3:** LLM pass with schema validation and retries; CLI markdown report
 - [ ] **M4:** eval harness with ~15 fixture PRs and precision/recall per category
 - [ ] **M5:** GitHub Action with inline comments, summary and idempotency
 - [ ] **M6:** GitHub App (webhooks, queue, Render deploy) and per-repo `.prmentor.yml`
