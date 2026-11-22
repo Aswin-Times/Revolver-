@@ -1,0 +1,20 @@
+{
+  "name": "@pr-mentor/evals",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Eval harness: fixture PRs with expected findings; precision/recall per category.",
+  "scripts": {
+    "eval": "node --conditions=source --import tsx src/main.ts",
+    "fixtures": "node --conditions=source --import tsx src/fixtures-cli.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pr-mentor/core": "workspace:*",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}

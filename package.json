@@ -24,7 +24,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "pr-mentor": "node apps/cli/dist/main.js"
+    "pr-mentor": "node apps/cli/dist/main.js",
+    "eval": "pnpm --filter @pr-mentor/evals eval",
+    "eval:fixtures": "pnpm --filter @pr-mentor/evals fixtures"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
