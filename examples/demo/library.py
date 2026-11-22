@@ -3,6 +3,7 @@
 This file exists only to demo PR Mentor on a pull request. Don't merge it.
 """
 
+import logging
 import sqlite3
 
 from flask import Flask, request
