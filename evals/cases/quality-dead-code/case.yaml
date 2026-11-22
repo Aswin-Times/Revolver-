@@ -1,0 +1,16 @@
+title: Unused variable, unreachable code and loose equality
+tags: [quality, javascript]
+groundTruth: human-written
+expected:
+  - file: src/score.js
+    lines: [2, 2]
+    category: quality
+    why: maxScore is never used.
+  - file: src/score.js
+    lines: [3, 3]
+    category: quality
+    why: score == "0" relies on type coercion (0 == "0" and "" == 0 surprises).
+  - file: src/score.js
+    lines: [7, 7]
+    category: quality
+    why: The console.log after return never runs.

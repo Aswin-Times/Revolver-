@@ -1,0 +1,23 @@
+diff --git a/src/cart.ts b/src/cart.ts
+new file mode 100644
+index 0000000..94a1787
+--- /dev/null
++++ b/src/cart.ts
+@@ -0,0 +1,17 @@
++export interface Item {
++  name: string;
++  price: number;
++  quantity: number;
++}
++
++export function addItem(cart: Item[], item: Item): Item[] {
++  const existing = cart.find((i) => i.name === item.name);
++  if (!existing) return [...cart, item];
++  return cart.map((i) =>
++    i.name === item.name ? { ...i, quantity: i.quantity + item.quantity } : i,
++  );
++}
++
++export function cartTotal(cart: Item[]): number {
++  return cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
++}

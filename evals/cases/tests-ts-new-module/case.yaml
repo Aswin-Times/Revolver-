@@ -1,0 +1,8 @@
+title: New TypeScript cart module with no tests
+tags: [tests, typescript]
+groundTruth: human-written
+expected:
+  - file: src/cart.ts
+    lines: [1, 17]
+    category: tests
+    why: New cart logic (merging quantities, totals) ships without any test.

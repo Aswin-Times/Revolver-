@@ -1,0 +1,8 @@
+title: A 300-line function
+tags: [quality, python]
+groundTruth: human-written
+expected:
+  - file: app/report.py
+    lines: [1, 1]
+    category: quality
+    why: One function of about 302 lines doing everything; it should be split up.

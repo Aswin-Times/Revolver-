@@ -1,0 +1,32 @@
+diff --git a/app/users.py b/app/users.py
+new file mode 100644
+index 0000000..29171b1
+--- /dev/null
++++ b/app/users.py
+@@ -0,0 +1,10 @@
++import logging
++import sqlite3
++
++logger = logging.getLogger(__name__)
++
++
++def find_user(conn: sqlite3.Connection, name: str):
++    row = conn.execute("SELECT * FROM users WHERE name = ?", (name,)).fetchone()
++    logger.info("Selected user %s", name)
++    return row
+diff --git a/tests/test_users.py b/tests/test_users.py
+new file mode 100644
+index 0000000..68adf84
+--- /dev/null
++++ b/tests/test_users.py
+@@ -0,0 +1,10 @@
++import sqlite3
++
++from app.users import find_user
++
++
++def test_find_user_by_name():
++    conn = sqlite3.connect(":memory:")
++    conn.execute("CREATE TABLE users (name TEXT)")
++    conn.execute("INSERT INTO users VALUES ('ana')")
++    assert find_user(conn, "ana") == ("ana",)

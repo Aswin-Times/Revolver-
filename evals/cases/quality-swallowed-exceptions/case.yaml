@@ -1,0 +1,12 @@
+title: Errors silently swallowed in Python and JavaScript
+tags: [quality, python, javascript]
+groundTruth: human-written
+expected:
+  - file: app/loader.py
+    lines: [8, 9]
+    category: quality
+    why: A bare except with pass hides every error, including typos and Ctrl+C.
+  - file: src/config.js
+    lines: [4, 5]
+    category: quality
+    why: An empty catch hides invalid JSON; the caller gets undefined with no clue why.

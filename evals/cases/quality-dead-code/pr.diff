@@ -1,0 +1,28 @@
+diff --git a/src/score.js b/src/score.js
+new file mode 100644
+index 0000000..57946ce
+--- /dev/null
++++ b/src/score.js
+@@ -0,0 +1,10 @@
++function scoreLabel(score) {
++  const maxScore = 100;
++  if (score == "0") {
++    return "none";
++  }
++  return score >= 50 ? "pass" : "fail";
++  console.log("scored", score);
++}
++
++module.exports = { scoreLabel };
+diff --git a/src/score.test.js b/src/score.test.js
+new file mode 100644
+index 0000000..8b594f8
+--- /dev/null
++++ b/src/score.test.js
+@@ -0,0 +1,6 @@
++const { scoreLabel } = require("./score");
++
++test("scoreLabel labels scores", () => {
++  expect(scoreLabel(70)).toBe("pass");
++  expect(scoreLabel(10)).toBe("fail");
++});

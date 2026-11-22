@@ -1,0 +1,8 @@
+title: New pricing functions with no tests
+tags: [tests, python]
+groundTruth: human-written
+expected:
+  - file: app/pricing.py
+    lines: [1, 12]
+    category: tests
+    why: Two new functions with edge cases (bounds, the 2 kg threshold) and no tests.

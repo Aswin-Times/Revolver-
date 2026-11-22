@@ -1,0 +1,53 @@
+diff --git a/app/loader.py b/app/loader.py
+new file mode 100644
+index 0000000..d4ecfd4
+--- /dev/null
++++ b/app/loader.py
+@@ -0,0 +1,9 @@
++import json
++
++
++def load_settings(path):
++    try:
++        with open(path) as fh:
++            return json.load(fh)
++    except:
++        pass
+diff --git a/src/config.js b/src/config.js
+new file mode 100644
+index 0000000..2f9ef57
+--- /dev/null
++++ b/src/config.js
+@@ -0,0 +1,8 @@
++function readConfig(text) {
++  try {
++    return JSON.parse(text);
++  } catch (error) {
++  }
++}
++
++module.exports = { readConfig };
+diff --git a/src/config.test.js b/src/config.test.js
+new file mode 100644
+index 0000000..e1302d5
+--- /dev/null
++++ b/src/config.test.js
+@@ -0,0 +1,5 @@
++const { readConfig } = require("./config");
++
++test("readConfig parses JSON", () => {
++  expect(readConfig('{"a": 1}')).toEqual({ a: 1 });
++});
+diff --git a/tests/test_loader.py b/tests/test_loader.py
+new file mode 100644
+index 0000000..eebf12a
+--- /dev/null
++++ b/tests/test_loader.py
+@@ -0,0 +1,7 @@
++from app.loader import load_settings
++
++
++def test_load_settings_reads_json(tmp_path):
++    path = tmp_path / "s.json"
++    path.write_text('{"debug": true}')
++    assert load_settings(path) == {"debug": True}

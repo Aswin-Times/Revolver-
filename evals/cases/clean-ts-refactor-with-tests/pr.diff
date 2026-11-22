@@ -1,0 +1,25 @@
+diff --git a/src/format.test.ts b/src/format.test.ts
+index e57aa77..649830b 100644
+--- a/src/format.test.ts
++++ b/src/format.test.ts
+@@ -4,3 +4,7 @@ import { formatPrice } from "./format";
+ it("formats whole dollars", () => {
+   expect(formatPrice(500)).toBe("$5.00");
+ });
++
++it("keeps two decimals", () => {
++  expect(formatPrice(1050)).toBe("$10.50");
++});
+diff --git a/src/format.ts b/src/format.ts
+index c6893a1..886d217 100644
+--- a/src/format.ts
++++ b/src/format.ts
+@@ -1,5 +1,5 @@
++const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
++
+ export function formatPrice(cents: number): string {
+-  let s = String(cents / 100);
+-  if (s.indexOf(".") === -1) s = s + ".00";
+-  return "$" + s;
++  return usd.format(cents / 100);
+ }

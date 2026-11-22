@@ -1,0 +1,16 @@
+diff --git a/app/orders.py b/app/orders.py
+new file mode 100644
+index 0000000..bc52f88
+--- /dev/null
++++ b/app/orders.py
+@@ -0,0 +1,10 @@
++import sqlite3
++
++
++def orders_for(customer):
++    conn = sqlite3.connect("shop.db")
++    try:
++        query = "SELECT * FROM orders WHERE customer = '" + customer + "'"
++        return conn.execute(query).fetchall()
++    except:
++        pass

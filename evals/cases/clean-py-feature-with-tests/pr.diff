@@ -1,0 +1,36 @@
+diff --git a/app/greeting.py b/app/greeting.py
+new file mode 100644
+index 0000000..c26c007
+--- /dev/null
++++ b/app/greeting.py
+@@ -0,0 +1,11 @@
++def greeting(name, hour):
++    """Greet someone by the time of day (hour is 0-23)."""
++    if not 0 <= hour <= 23:
++        raise ValueError("hour must be between 0 and 23")
++    if hour < 12:
++        part = "morning"
++    elif hour < 18:
++        part = "afternoon"
++    else:
++        part = "evening"
++    return f"Good {part}, {name}!"
+diff --git a/tests/test_greeting.py b/tests/test_greeting.py
+new file mode 100644
+index 0000000..1cb4c63
+--- /dev/null
++++ b/tests/test_greeting.py
+@@ -0,0 +1,13 @@
++import pytest
++
++from app.greeting import greeting
++
++
++@pytest.mark.parametrize(("hour", "part"), [(0, "morning"), (12, "afternoon"), (23, "evening")])
++def test_greeting_picks_part_of_day(hour, part):
++    assert greeting("Sam", hour) == f"Good {part}, Sam!"
++
++
++def test_greeting_rejects_bad_hours():
++    with pytest.raises(ValueError):
++        greeting("Sam", 24)

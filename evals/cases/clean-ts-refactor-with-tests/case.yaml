@@ -1,0 +1,5 @@
+title: TypeScript refactor with an updated test
+tags: [clean, typescript]
+groundTruth: human-written
+clean: true
+expected: []

@@ -1,0 +1,16 @@
+title: SQL injection, a swallowed error and no tests in one PR
+tags: [security, tests, quality, python]
+groundTruth: human-written
+expected:
+  - file: app/orders.py
+    lines: [7, 8]
+    category: security
+    why: customer is concatenated into the SQL text.
+  - file: app/orders.py
+    lines: [9, 10]
+    category: quality
+    why: A bare except with pass hides database errors and returns None.
+  - file: app/orders.py
+    lines: [4, 10]
+    category: tests
+    why: New query function with no tests.

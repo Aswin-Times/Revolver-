@@ -1,0 +1,5 @@
+title: Safe parameterised SQL that looks risky at a glance
+tags: [clean, python, security]
+groundTruth: human-written
+clean: true
+expected: []
