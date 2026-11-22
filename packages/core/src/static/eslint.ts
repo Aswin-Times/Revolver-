@@ -1,6 +1,7 @@
 import { ESLint, type Linter } from "eslint";
 import tseslint from "typescript-eslint";
 import type { Category, Finding, Reference, Severity } from "../finding.js";
+import { classifyFile } from "../test-gap/classify.js";
 import type { StaticTool } from "./tool.js";
 
 const JS_FILES = /\.(js|jsx|mjs|cjs|ts|tsx|mts|cts)$/;
@@ -46,6 +47,12 @@ const CONFIG: Linter.Config[] = [
   },
   { files: ["**/*.cjs", "**/*.cts"], languageOptions: { sourceType: "commonjs" } },
 ];
+
+/**
+ * Size rules that every test suite trips: a `describe(...)` callback is one long function by
+ * design. Test files still get the security and correctness rules.
+ */
+const NOT_IN_TESTS = new Set(["complexity", "max-lines-per-function"]);
 
 interface RuleInfo {
   category: Category;
@@ -241,7 +248,7 @@ export const eslintTool: StaticTool = {
       if (!file) continue;
       for (const message of result.messages) {
         if (message.fatal || message.ruleId === null) unparsable.add(file);
-        else {
+        else if (!(NOT_IN_TESTS.has(message.ruleId) && classifyFile(file) === "test")) {
           const ruleId = message.ruleId === "no-restricted-syntax" ? "empty-catch" : message.ruleId;
           findings.push(toFinding(message, ruleId, file));
         }
