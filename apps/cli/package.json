@@ -1,0 +1,20 @@
+{
+  "name": "@pr-mentor/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "pr-mentor: review a diff locally and print a teaching-style markdown report.",
+  "bin": {
+    "pr-mentor": "./dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pr-mentor/core": "workspace:*"
+  }
+}

@@ -85,3 +85,7 @@ export type { RankOptions } from "./review/rank.js";
 export { verifiedRepo } from "./repo/verify.js";
 export { reviewDiff } from "./review/review.js";
 export type { ReviewOptions, ReviewResult } from "./review/review.js";
+export { createAnthropicLlmClient } from "./llm/client.js";
+export { runCommand, ToolNotFoundError } from "./static/exec.js";
+export type { CommandResult, CommandRunner } from "./static/exec.js";
+export { isSafeRepoPath } from "./static/workspace.js";

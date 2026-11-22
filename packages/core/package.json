@@ -6,6 +6,7 @@
   "description": "PR Mentor review engine: diff in, structured findings out. Knows nothing about GitHub.",
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }

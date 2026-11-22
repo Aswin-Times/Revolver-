@@ -23,7 +23,8 @@
     "test:watch": "vitest --project unit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "pr-mentor": "node apps/cli/dist/main.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,8 +1,15 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const roots = ["packages/*/test", "apps/*/test"];
 
 export default defineConfig({
+  resolve: {
+    // Apps import the core package straight from source, so tests never need a build first.
+    alias: {
+      "@pr-mentor/core": fileURLToPath(new URL("./packages/core/src/index.ts", import.meta.url)),
+    },
+  },
   test: {
     projects: [
       {

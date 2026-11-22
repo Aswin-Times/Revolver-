@@ -168,3 +168,14 @@ export class AnthropicLlmClient implements LlmClient {
     }
   }
 }
+
+/** The production client. Pass apiKey when it comes from somewhere other than process.env. */
+export function createAnthropicLlmClient(options: { apiKey?: string } = {}): AnthropicLlmClient {
+  return new AnthropicLlmClient(
+    new Anthropic({
+      maxRetries: 2,
+      timeout: 5 * 60_000,
+      ...(options.apiKey ? { apiKey: options.apiKey } : {}),
+    }),
+  );
+}
