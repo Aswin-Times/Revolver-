@@ -13,7 +13,7 @@ import {
 import { parseCliArgs, USAGE, UsageError, type ReviewArgs } from "./args.js";
 import { applyEnvFile } from "./env.js";
 import { gitDiff, GitError, gitRepoContext, workingTreeRepo } from "./git.js";
-import { renderMarkdown, usageLine } from "./render-markdown.js";
+import { renderMarkdown, usageLine } from "@pr-mentor/core";
 
 export interface RunDeps {
   cwd: string;

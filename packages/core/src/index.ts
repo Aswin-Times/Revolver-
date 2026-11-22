@@ -89,3 +89,4 @@ export { createAnthropicLlmClient } from "./llm/client.js";
 export { runCommand, ToolNotFoundError } from "./static/exec.js";
 export type { CommandResult, CommandRunner } from "./static/exec.js";
 export { isSafeRepoPath } from "./static/workspace.js";
+export { renderFinding, renderMarkdown, usageLine } from "./render.js";
