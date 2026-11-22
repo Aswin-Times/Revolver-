@@ -1,0 +1,11 @@
+title: Session cookie loaded with pickle
+tags: [security, python, deserialization]
+groundTruth: human-written
+expected:
+  - file: app/session.py
+    lines: [9, 9]
+    category: security
+    why: A cookie the client controls is unpickled, which can run arbitrary code.
+allowed:
+  - file: tests/test_session.py
+    category: security

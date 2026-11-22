@@ -1,0 +1,33 @@
+diff --git a/app/session.py b/app/session.py
+new file mode 100644
+index 0000000..302841b
+--- /dev/null
++++ b/app/session.py
+@@ -0,0 +1,9 @@
++import base64
++import pickle
++
++from flask import request
++
++
++def load_session():
++    cookie = request.cookies.get("session", "")
++    return pickle.loads(base64.b64decode(cookie))
+diff --git a/tests/test_session.py b/tests/test_session.py
+new file mode 100644
+index 0000000..fcb0ce5
+--- /dev/null
++++ b/tests/test_session.py
+@@ -0,0 +1,12 @@
++import base64
++import pickle
++
++from flask import Flask
++
++from app.session import load_session
++
++
++def test_load_session_round_trips():
++    cookie = base64.b64encode(pickle.dumps({"user": 1})).decode()
++    with Flask(__name__).test_request_context(headers={"Cookie": f"session={cookie}"}):
++        assert load_session() == {"user": 1}

@@ -3,3 +3,5 @@ pnpm-lock.yaml
 **/coverage/
 **/test/fixtures/
 **/rules/semgrep/
+evals/cases/
+evals/runs/

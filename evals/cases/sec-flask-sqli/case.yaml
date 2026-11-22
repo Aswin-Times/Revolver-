@@ -1,0 +1,12 @@
+title: SQL injection in a Flask route
+tags: [security, python, flask]
+groundTruth: human-written
+expected:
+  - file: app/users.py
+    lines: [12, 12]
+    category: security
+    why: The name query parameter is put into the SQL text with an f-string.
+allowed:
+  - file: app/users.py
+    category: quality
+    lines: [10, 13]

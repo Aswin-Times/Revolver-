@@ -1,0 +1,28 @@
+diff --git a/app/calculator.py b/app/calculator.py
+new file mode 100644
+index 0000000..8c489a2
+--- /dev/null
++++ b/app/calculator.py
+@@ -0,0 +1,10 @@
++from flask import Flask, request
++
++app = Flask(__name__)
++
++
++@app.route("/calc")
++def calculate():
++    expression = request.args.get("expr", "0")
++    result = eval(expression)
++    return {"result": result}
+diff --git a/tests/test_calculator.py b/tests/test_calculator.py
+new file mode 100644
+index 0000000..9c784d0
+--- /dev/null
++++ b/tests/test_calculator.py
+@@ -0,0 +1,6 @@
++from app.calculator import app
++
++
++def test_calculate_adds():
++    response = app.test_client().get("/calc?expr=1%2B2")
++    assert response.get_json() == {"result": 3}

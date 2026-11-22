@@ -1,0 +1,32 @@
+diff --git a/app/users.py b/app/users.py
+new file mode 100644
+index 0000000..ffc6805
+--- /dev/null
++++ b/app/users.py
+@@ -0,0 +1,13 @@
++import sqlite3
++
++from flask import Flask, request
++
++app = Flask(__name__)
++
++
++@app.route("/users")
++def find_user():
++    conn = sqlite3.connect("app.db")
++    name = request.args.get("name", "")
++    row = conn.execute(f"SELECT * FROM users WHERE name = '{name}'").fetchone()
++    return {"user": row}
+diff --git a/tests/test_users.py b/tests/test_users.py
+new file mode 100644
+index 0000000..aacd495
+--- /dev/null
++++ b/tests/test_users.py
+@@ -0,0 +1,7 @@
++from app.users import app
++
++
++def test_find_user_returns_json():
++    client = app.test_client()
++    response = client.get("/users?name=alice")
++    assert response.status_code == 200

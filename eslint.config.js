@@ -11,6 +11,8 @@ export default defineConfig(
       "**/test/fixtures/**",
       // Deliberately vulnerable Semgrep test cases
       "**/rules/semgrep/**",
+      // Eval fixtures are byte-for-byte test data
+      "evals/cases/**",
     ],
   },
   eslint.configs.recommended,

@@ -1,0 +1,8 @@
+title: Shell command built from user input in Node
+tags: [security, javascript]
+groundTruth: human-written
+expected:
+  - file: src/tools/ping.js
+    lines: [4, 4]
+    category: security
+    why: host is interpolated into a shell command run by exec().

@@ -1,0 +1,29 @@
+diff --git a/app/storage.py b/app/storage.py
+new file mode 100644
+index 0000000..9c86316
+--- /dev/null
++++ b/app/storage.py
+@@ -0,0 +1,8 @@
++import boto3
++
++AWS_ACCESS_KEY_ID = "{{AWS_ACCESS_KEY_ID}}"
++
++
++def upload_report(path):
++    client = boto3.client("s3", aws_access_key_id=AWS_ACCESS_KEY_ID)
++    client.upload_file(path, "reports", path)
+diff --git a/tests/test_storage.py b/tests/test_storage.py
+new file mode 100644
+index 0000000..9e618ba
+--- /dev/null
++++ b/tests/test_storage.py
+@@ -0,0 +1,9 @@
++from unittest import mock
++
++from app.storage import upload_report
++
++
++def test_upload_report_uses_reports_bucket():
++    with mock.patch("app.storage.boto3") as boto3:
++        upload_report("r.csv")
++    boto3.client.return_value.upload_file.assert_called_once_with("r.csv", "reports", "r.csv")

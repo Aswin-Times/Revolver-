@@ -1,0 +1,30 @@
+diff --git a/src/tools/ping.js b/src/tools/ping.js
+new file mode 100644
+index 0000000..bf8c273
+--- /dev/null
++++ b/src/tools/ping.js
+@@ -0,0 +1,9 @@
++const { exec } = require("child_process");
++
++function ping(host, callback) {
++  exec(`ping -c 1 ${host}`, (error, stdout) => {
++    callback(error, stdout);
++  });
++}
++
++module.exports = { ping };
+diff --git a/src/tools/ping.test.js b/src/tools/ping.test.js
+new file mode 100644
+index 0000000..264ffa2
+--- /dev/null
++++ b/src/tools/ping.test.js
+@@ -0,0 +1,9 @@
++const { ping } = require("./ping");
++
++test("ping reports output", (done) => {
++  ping("localhost", (error, stdout) => {
++    expect(error).toBeNull();
++    expect(stdout).toContain("localhost");
++    done();
++  });
++});

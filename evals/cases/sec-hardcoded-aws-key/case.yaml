@@ -1,0 +1,8 @@
+title: Hardcoded AWS access key
+tags: [security, python, secrets]
+groundTruth: human-written
+expected:
+  - file: app/storage.py
+    lines: [3, 3]
+    category: security
+    why: An AWS access key id is committed in the source.

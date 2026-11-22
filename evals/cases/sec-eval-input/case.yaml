@@ -1,0 +1,12 @@
+title: eval() on a query parameter
+tags: [security, python, flask]
+groundTruth: human-written
+expected:
+  - file: app/calculator.py
+    lines: [9, 9]
+    category: security
+    why: User input goes straight into eval(), which runs arbitrary code.
+allowed:
+  - file: app/calculator.py
+    category: quality
+    lines: [8, 10]

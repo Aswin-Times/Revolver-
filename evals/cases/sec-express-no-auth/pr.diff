@@ -1,0 +1,31 @@
+diff --git a/src/routes/users.js b/src/routes/users.js
+new file mode 100644
+index 0000000..3bbbdc6
+--- /dev/null
++++ b/src/routes/users.js
+@@ -0,0 +1,11 @@
++const express = require("express");
++const db = require("../db");
++
++const router = express.Router();
++
++router.delete("/users/:id", async (req, res) => {
++  await db.users.delete(req.params.id);
++  res.sendStatus(204);
++});
++
++module.exports = router;
+diff --git a/src/routes/users.test.js b/src/routes/users.test.js
+new file mode 100644
+index 0000000..ae5bcad
+--- /dev/null
++++ b/src/routes/users.test.js
+@@ -0,0 +1,8 @@
++const request = require("supertest");
++const express = require("express");
++const router = require("./users");
++
++test("DELETE /users/:id responds 204", async () => {
++  const app = express().use(router);
++  await request(app).delete("/users/1").expect(204);
++});
