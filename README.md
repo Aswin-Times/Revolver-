@@ -303,13 +303,13 @@ fails if precision or recall drops below `evals/thresholds.json`.
 
 | Category | Precision | Recall |
 | -------- | --------- | ------ |
-| security | 88%       | 100%   |
+| security | 100%      | 100%   |
 | tests    | 100%      | 100%   |
 | quality  | 100%      | 100%   |
 
-All 4 clean PRs get zero findings. The one false positive is a known weakness: in
-`mixed-orders`, Ruff and Semgrep flag the same SQL injection on adjacent lines and ranking only
-merges overlapping lines. Two caveats: the cases were written alongside the tools, so the
+All 4 clean PRs get zero findings. (The first baseline had 88% security precision: Ruff and
+Semgrep reported the same SQL injection a line apart in `mixed-orders`. Ranking now merges the
+same kind of issue within two lines, and the eval confirmed the fix.) Two caveats: the cases were written alongside the tools, so the
 static numbers are optimistic and the set needs harder cases that only a careful reviewer would
 catch; and the labels are human-written by the author, so a second reviewer should spot-check
 them. A Claude (`full` mode) baseline is still to come.
