@@ -52,3 +52,7 @@ jobs:
         run: pnpm test:integration
         env:
           PR_MENTOR_REQUIRE_TOOLS: "1"
+      - name: Eval harness self-check (oracle must score 100%)
+        run: pnpm eval --mode oracle --check-thresholds
+      - name: Static eval (fails if precision or recall drops below evals/thresholds.json)
+        run: pnpm eval --mode static --check-thresholds
