@@ -5,9 +5,9 @@ An AI code-review assistant for student repositories. It reviews pull requests f
 teach: why the issue matters, a small fix, and a link to learn more. The tone is a helpful
 senior developer, not a linter.
 
-> **Status:** Milestones 1–4 of 6 are done: diff handling, static analysis, the
-> missing-tests check, the Claude pass, the `pr-mentor` CLI and the eval harness. Next: the
-> GitHub Action (M5). See the [roadmap](#roadmap).
+> **Status:** Milestones 1–5 of 6 are done: diff handling, static analysis, the
+> missing-tests check, the Claude pass, the `pr-mentor` CLI, the eval harness and the GitHub
+> Action. Next: a GitHub App (M6). See the [roadmap](#roadmap).
 
 ## What a review comment looks like
 
@@ -56,8 +56,8 @@ flowchart LR
 
     classDef done fill:#d1fadf,stroke:#039855,color:#054f31
     classDef planned fill:#f2f4f7,stroke:#98a2b3,color:#344054,stroke-dasharray:4 3
-    class PREP,STATIC,GAP,LLM,RANK,CLI done
-    class ACTION,APP planned
+    class PREP,STATIC,GAP,LLM,RANK,CLI,ACTION done
+    class APP planned
 ```
 
 Green boxes are built; grey dashed boxes are planned. Adapters supply a `RepoContext`
@@ -233,6 +233,58 @@ cost and time. A typical student PR costs about $0.03–0.10.
 From code, `reviewDiff(rawDiff, repo, options)` in `@pr-mentor/core` does the whole review
 and returns ranked findings plus a report for every tool and for Claude.
 
+## GitHub Action
+
+Add PR Mentor to a student repository by copying
+[`examples/student-workflow.yml`](examples/student-workflow.yml) to
+`.github/workflows/pr-mentor.yml`:
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: Aswin-Times/Revolver-@main
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }} # optional
+```
+
+On every push to a PR it:
+
+- posts **inline comments** on the lines that need attention, in one review;
+- keeps **one summary comment** (the full report) up to date instead of adding new ones;
+- **never repeats a comment**: each one carries a hidden fingerprint of the issue and the code
+  it points at (not the line number), so pushing again, or adding lines above, doesn't
+  re-post it;
+- writes the report to the **job summary**, and sets the `findings` and `cost-usd` outputs.
+
+| Input               | Default                       | What it does                                                  |
+| ------------------- | ----------------------------- | ------------------------------------------------------------- |
+| `anthropic-api-key` | empty                         | enables the Claude pass; without it the review is static-only |
+| `model`, `effort`   | `claude-sonnet-5-5`, `medium` | Claude model and thinking effort                              |
+| `max-comments`      | 15                            | findings shown                                                |
+| `fail-on`           | empty                         | fail the check if a finding is at least this severe           |
+| `github-token`      | `github.token`                | needs `pull-requests: write`                                  |
+
+It's a composite action: it installs the pinned Semgrep, Ruff and Gitleaks and builds PR Mentor
+on the runner, which adds about a minute to the job. It uses `on: pull_request` only. For PRs
+from forks, GitHub gives a read-only token and no secrets, so the review goes to the job
+summary instead of comments. `pull_request_target` is refused on purpose: it would run
+with write access and secrets alongside untrusted code.
+
+This repository reviews its own pull requests the same way
+([`.github/workflows/pr-mentor.yml`](.github/workflows/pr-mentor.yml)).
+
 ## Project layout
 
 ```
@@ -250,7 +302,10 @@ packages/core/            review engine (pure library, no GitHub code)
   test/                   Vitest suites; fixtures are real git/tool output (sanitized)
 apps/cli/                 pr-mentor review: git/diff input, markdown/json report
 evals/                    fixture PRs, matching, metrics, runner, reports (pnpm eval)
-apps/                     GitHub Action, GitHub App (coming in later milestones)
+apps/action/              GitHub Action adapter: fingerprints, review planning, Octokit client
+action.yml                composite action definition (installs tools, builds, runs apps/action)
+scripts/install-tools.sh  pinned Semgrep / Ruff / checksum-verified Gitleaks (CI + Action)
+examples/                 copy-paste workflow for student repos
 ```
 
 ## Safety principles
@@ -337,5 +392,5 @@ tests with `PR_MENTOR_REQUIRE_TOOLS=1`, so they can't be skipped there.
 - [x] **M2:** static pass wrappers (Semgrep, Gitleaks, Ruff, ESLint) and the test-gap heuristic
 - [x] **M3:** LLM pass with schema validation and retries; CLI markdown report
 - [x] **M4:** eval harness with 16 fixture PRs and precision/recall per category (Claude baseline pending)
-- [ ] **M5:** GitHub Action with inline comments, summary and idempotency
+- [x] **M5:** GitHub Action with inline comments, summary and idempotency
 - [ ] **M6:** GitHub App (webhooks, queue, Render deploy) and per-repo `.prmentor.yml`

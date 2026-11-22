@@ -1,4 +1,7 @@
-import type { Finding, LlmReport, ReviewResult, Severity, ToolName } from "@pr-mentor/core";
+import type { Finding, Severity } from "./finding.js";
+import type { LlmReport } from "./llm/pass.js";
+import type { ReviewResult } from "./review/review.js";
+import type { ToolName } from "./static/tool.js";
 
 const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low"];
 const BADGE: Record<Severity, string> = { critical: "🔴", high: "🟠", medium: "🟡", low: "🔵" };
@@ -41,7 +44,7 @@ function foundBy(f: Finding): string {
 
 const shortFoundBy = (f: Finding) => foundBy(f).replace(/ \(`[^`]*`\)$/, "");
 
-function renderFinding(f: Finding): string {
+export function renderFinding(f: Finding): string {
   const parts = [
     `## ${BADGE[f.severity]} ${capitalize(f.severity)} · ${CATEGORY_LABEL[f.category]}: ${f.title}`,
     `${location(f)} · found by ${foundBy(f)}`,

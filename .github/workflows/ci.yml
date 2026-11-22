@@ -8,13 +8,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Pinned so static findings (and later the eval scores) don't drift between runs.
-  RUFF_VERSION: 0.17.6
-  SEMGREP_VERSION: 1.186.0
-  GITLEAKS_VERSION: 8.30.1
-  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
-
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -27,21 +20,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: Install Ruff and Semgrep
-        run: |
-          pipx install "ruff==${RUFF_VERSION}"
-          pipx install "semgrep==${SEMGREP_VERSION}"
-          ruff --version
-          semgrep --version
-
-      - name: Install Gitleaks (checksum verified)
-        run: |
-          file="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          curl -sSfL -o "$file" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${file}"
-          echo "${GITLEAKS_SHA256}  ${file}" | sha256sum -c -
-          tar -xzf "$file" gitleaks
-          sudo mv gitleaks /usr/local/bin/gitleaks
-          gitleaks version
+      - name: Install Ruff, Semgrep and Gitleaks (pinned, checksum verified)
+        run: bash scripts/install-tools.sh
 
       - run: pnpm format:check
       - run: pnpm lint

@@ -74,6 +74,23 @@ describe("eslintTool (real ESLint)", () => {
     );
   });
 
+  it("doesn't flag long or branchy test suites, but still flags real problems in test files", async () => {
+    const branchy = [
+      "export function pick(x) {",
+      ...Array.from({ length: 12 }, (_, i) => `  if (x === ${i}) return ${i};`),
+      "  return -1;",
+      "}",
+    ].join("\n");
+    const { findings } = await lint({
+      "test/report.test.js": `${longFunction(120)}${branchy}\nexport const run = (code) => eval(code);\n`,
+      "src/__tests__/pick.js": `${branchy}\n`,
+    });
+    const rules = findings.map((f) => f.ruleId);
+    expect(rules).not.toContain("eslint/max-lines-per-function");
+    expect(rules).not.toContain("eslint/complexity");
+    expect(rules).toContain("eslint/no-eval");
+  });
+
   it("parses TypeScript and TSX without flagging types used only in annotations", async () => {
     const { findings, detail } = await lint({
       "src/user.ts": [

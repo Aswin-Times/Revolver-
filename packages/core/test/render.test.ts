@@ -1,6 +1,7 @@
-import type { Finding, ReviewResult } from "@pr-mentor/core";
+import type { Finding } from "../src/finding.js";
+import type { ReviewResult } from "../src/review/review.js";
 import { describe, expect, it } from "vitest";
-import { renderMarkdown, usageLine } from "../src/render-markdown.js";
+import { renderMarkdown, usageLine } from "../src/render.js";
 
 const finding = (overrides: Partial<Finding> = {}): Finding => ({
   file: "app/routes.py",

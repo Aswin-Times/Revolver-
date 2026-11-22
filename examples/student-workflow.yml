@@ -1,0 +1,31 @@
+# Copy this file to .github/workflows/pr-mentor.yml in a student repository.
+#
+# Every pull request then gets a teaching-style review: inline comments on the lines that
+# need attention, plus one summary comment that is updated on each push. Comments are never
+# repeated when the student pushes again.
+#
+# Optional: add an ANTHROPIC_API_KEY repository secret (Settings → Secrets and variables →
+# Actions) for the Claude pass. Without it, PR Mentor runs the static checks only.
+name: PR Mentor
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write # to post review comments
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # PR Mentor diffs base...head
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: Aswin-Times/Revolver-@main
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # max-comments: "10"
+          # fail-on: critical   # fail the check on critical findings

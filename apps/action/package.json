@@ -1,0 +1,17 @@
+{
+  "name": "@pr-mentor/action",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GitHub Action adapter: posts PR Mentor reviews as inline PR comments plus one summary.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1",
+    "@pr-mentor/core": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}
