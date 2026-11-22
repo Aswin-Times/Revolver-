@@ -1,6 +1,6 @@
 {
   "static": {
-    "security": { "precision": 0.85, "recall": 1 },
+    "security": { "precision": 1, "recall": 1 },
     "tests": { "precision": 1, "recall": 1 },
     "quality": { "precision": 1, "recall": 1 },
     "cleanZeroFindings": 4

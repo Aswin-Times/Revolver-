@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadConfig } from "@pr-mentor/core";
@@ -63,7 +63,10 @@ if (mode === "full") {
 const out = await runEval(cases, { mode, config, reps, maxCostUsd });
 const report = buildReport(out, cases.length);
 const previous = values.compare
-  ? (JSON.parse(await readFile(values.compare, "utf8")) as EvalReport)
+  ? // pnpm runs this inside evals/; resolve the path from where the user typed the command.
+    (JSON.parse(
+      await readFile(resolve(process.env.INIT_CWD ?? process.cwd(), values.compare), "utf8"),
+    ) as EvalReport)
   : undefined;
 const markdown = renderReport(report, previous);
 

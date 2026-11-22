@@ -139,3 +139,45 @@ describe("rankFindings", () => {
     expect(hidden.map((x) => x.title)).toEqual(["n3", "n4"]);
   });
 });
+
+describe("rankFindings: the same issue reported by two tools on nearby lines", () => {
+  const opts = { maxComments: 15, minConfidence: 0.5 };
+
+  it("merges the same kind of issue within 2 lines (Ruff S608 on 7, Semgrep on 8)", () => {
+    const { shown } = rankFindings(
+      [
+        f({ title: "ruff", source: "lint", ruleId: "ruff/S608", line: 7, severity: "critical" }),
+        f({ title: "semgrep", ruleId: "semgrep/py-sql-injection", line: 8, severity: "critical" }),
+      ],
+      opts,
+    );
+    expect(shown.map((x) => x.title)).toEqual(["semgrep"]);
+  });
+
+  it("keeps different issues on adjacent lines apart", () => {
+    const { shown } = rankFindings(
+      [
+        f({ category: "quality", ruleId: "eslint/@typescript-eslint/no-unused-vars", line: 2 }),
+        f({ category: "quality", ruleId: "eslint/eqeqeq", line: 3 }),
+      ],
+      opts,
+    );
+    expect(shown).toHaveLength(2);
+  });
+
+  it("keeps the same kind of issue apart when it is further away", () => {
+    const { shown } = rankFindings(
+      [f({ ruleId: "ruff/S608", line: 7 }), f({ ruleId: "semgrep/py-sql-injection", line: 10 })],
+      opts,
+    );
+    expect(shown).toHaveLength(2);
+  });
+
+  it("only merges by proximity when both findings come from known rules", () => {
+    const { shown } = rankFindings(
+      [f({ ruleId: "ruff/S608", line: 7 }), f({ source: "llm", line: 8 })],
+      opts,
+    );
+    expect(shown).toHaveLength(2);
+  });
+});
