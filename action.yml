@@ -1,0 +1,62 @@
+name: PR Mentor
+description: Teaching-style code review for student pull requests (security, missing tests, code quality).
+author: Aswin-Times
+branding:
+  icon: book-open
+  color: green
+
+inputs:
+  github-token:
+    description: "Token used to post the review. Needs `pull-requests: write`."
+    default: ${{ github.token }}
+  anthropic-api-key:
+    description: Anthropic API key for the Claude pass. Leave empty for a static-only review.
+    default: ""
+  model:
+    description: Claude model (default claude-sonnet-5-5).
+    default: ""
+  effort:
+    description: low | medium | high | xhigh | max (default medium).
+    default: ""
+  max-comments:
+    description: Show at most this many findings (default 15).
+    default: ""
+  fail-on:
+    description: Fail the check if any finding is at least critical | high | medium | low. Empty = never fail.
+    default: ""
+
+outputs:
+  findings:
+    description: Number of findings.
+    value: ${{ steps.review.outputs.findings }}
+  cost-usd:
+    description: Claude cost of this review in USD.
+    value: ${{ steps.review.outputs.cost-usd }}
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6
+      with:
+        version: 12.5.1
+    - name: Install Semgrep, Ruff and Gitleaks
+      shell: bash
+      run: bash "${{ github.action_path }}/scripts/install-tools.sh"
+    - name: Install and build PR Mentor
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        pnpm install --frozen-lockfile
+        pnpm --filter @pr-mentor/core --filter @pr-mentor/action build
+    - name: Review the pull request
+      id: review
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        PR_MENTOR_GITHUB_TOKEN: ${{ inputs.github-token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        PR_MENTOR_MODEL: ${{ inputs.model }}
+        PR_MENTOR_EFFORT: ${{ inputs.effort }}
+        PR_MENTOR_MAX_COMMENTS: ${{ inputs.max-comments }}
+        PR_MENTOR_FAIL_ON: ${{ inputs.fail-on }}
+      run: pnpm exec node apps/action/dist/main.js
