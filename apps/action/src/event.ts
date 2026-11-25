@@ -30,13 +30,17 @@ const PayloadSchema = z.object({
   }),
 });
 
-export function prFromEvent(eventName: string, payload: unknown): PrRef {
-  if (eventName === "pull_request_target") {
+export function prFromEvent(
+  eventName: string,
+  payload: unknown,
+  trustedBaseCheckout = false,
+): PrRef {
+  if (eventName === "pull_request_target" && !trustedBaseCheckout) {
     throw new EventError(
       "pull_request_target isn't supported: it gives the workflow write access and secrets while handling untrusted fork code. Use `on: pull_request`.",
     );
   }
-  if (eventName !== "pull_request") {
+  if (eventName !== "pull_request" && eventName !== "pull_request_target") {
     throw new EventError(
       `PR Mentor reviews pull requests; this run was triggered by "${eventName}".`,
     );

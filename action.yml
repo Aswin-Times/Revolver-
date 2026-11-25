@@ -24,6 +24,9 @@ inputs:
   fail-on:
     description: Fail the check if any finding is at least critical | high | medium | low. Empty = never fail.
     default: ""
+  trusted-base-checkout:
+    description: Enable pull_request_target only when running the Action and workspace from trusted base code.
+    default: "false"
 
 outputs:
   findings:
@@ -36,9 +39,17 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Locate PR Mentor's package manifest
+      id: manifest
+      shell: bash
+      env:
+        PR_MENTOR_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        manifest=$(realpath --relative-to="$GITHUB_WORKSPACE" "$PR_MENTOR_ACTION_PATH/package.json")
+        printf 'path=%s\n' "$manifest" >> "$GITHUB_OUTPUT"
     - uses: pnpm/action-setup@v6
       with:
-        version: 12.5.1
+        package_json_file: ${{ steps.manifest.outputs.path }}
     - name: Install Semgrep, Ruff and Gitleaks
       shell: bash
       run: bash "${{ github.action_path }}/scripts/install-tools.sh"
@@ -59,4 +70,5 @@ runs:
         PR_MENTOR_EFFORT: ${{ inputs.effort }}
         PR_MENTOR_MAX_COMMENTS: ${{ inputs.max-comments }}
         PR_MENTOR_FAIL_ON: ${{ inputs.fail-on }}
+        PR_MENTOR_TRUSTED_BASE_CHECKOUT: ${{ inputs.trusted-base-checkout }}
       run: pnpm exec node apps/action/dist/main.js

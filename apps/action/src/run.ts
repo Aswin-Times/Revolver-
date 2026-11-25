@@ -6,6 +6,7 @@ import {
   parseDiff,
   renderMarkdown,
   reviewDiff,
+  runCommand,
   SeveritySchema,
   usageLine,
   type LlmClient,
@@ -48,7 +49,11 @@ export async function runAction(deps: ActionDeps): Promise<number> {
   const { log } = deps;
   let pr;
   try {
-    pr = prFromEvent(deps.eventName, deps.payload);
+    pr = prFromEvent(
+      deps.eventName,
+      deps.payload,
+      deps.env.PR_MENTOR_TRUSTED_BASE_CHECKOUT === "true",
+    );
   } catch (error) {
     if (error instanceof EventError) {
       log.fail(error.message);
@@ -57,8 +62,19 @@ export async function runAction(deps: ActionDeps): Promise<number> {
     throw error;
   }
 
+  if (deps.eventName === "pull_request_target") {
+    const checkout = await runCommand("git", ["rev-parse", "HEAD"], {
+      cwd: deps.workspace,
+      timeoutMs: 10_000,
+    });
+    if (checkout.exitCode !== 0 || checkout.stdout.trim() !== pr.baseSha) {
+      log.fail("pull_request_target requires the workspace to be checked out at the PR base SHA.");
+      return 1;
+    }
+  }
+
   const config = loadConfig(deps.env);
-  const apiKey = deps.env.ANTHROPIC_API_KEY;
+  const apiKey = pr.fromFork ? undefined : deps.env.ANTHROPIC_API_KEY;
   const llm = apiKey
     ? (deps.createLlm ?? ((key) => createAnthropicLlmClient({ apiKey: key })))(apiKey)
     : null;
