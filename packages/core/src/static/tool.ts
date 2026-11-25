@@ -14,6 +14,7 @@ export interface ToolRun {
   findings: Finding[];
   /** Anything worth telling the user, e.g. files the tool couldn't parse. */
   detail?: string;
+  incomplete?: true;
   /** Raw secret values found. Only used to build the redactor; never output. */
   secrets?: string[];
 }

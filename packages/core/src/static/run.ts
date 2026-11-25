@@ -30,6 +30,8 @@ const INSTALL_HINTS: Record<ToolName, string> = {
 export interface ToolReport {
   tool: ToolName;
   status: "ran" | "skipped" | "failed";
+  /** A missing executable or partial scan of applicable files. */
+  incomplete?: true;
   detail?: string;
   /** Findings on added lines. */
   findings: number;
@@ -108,6 +110,7 @@ export async function runStaticPass(
               report: {
                 tool: tool.name,
                 status: "ran",
+                ...(run.incomplete ? { incomplete: true } : {}),
                 ...(run.detail ? { detail: run.detail } : {}),
                 findings: kept.length,
                 durationMs: Date.now() - started,
@@ -121,6 +124,7 @@ export async function runStaticPass(
               report: {
                 tool: tool.name,
                 status: missing ? "skipped" : "failed",
+                ...(missing ? { incomplete: true } : {}),
                 detail: missing
                   ? INSTALL_HINTS[tool.name]
                   : error instanceof Error

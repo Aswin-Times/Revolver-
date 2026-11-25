@@ -6,11 +6,11 @@ import {
   parseDiff,
   renderMarkdown,
   reviewDiff,
+  reviewGateFailure,
   runCommand,
   SeveritySchema,
   usageLine,
   type LlmClient,
-  type Severity,
   type StaticPassOptions,
 } from "@pr-mentor/core";
 import { summaryBody } from "./comments.js";
@@ -40,7 +40,6 @@ export interface ActionDeps {
   staticOptions?: StaticPassOptions;
 }
 
-const RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const status = (error: unknown) =>
   typeof error === "object" && error !== null && "status" in error ? error.status : undefined;
 
@@ -74,6 +73,12 @@ export async function runAction(deps: ActionDeps): Promise<number> {
   }
 
   const config = loadConfig(deps.env);
+  const threshold = deps.env.PR_MENTOR_FAIL_ON?.trim();
+  const failOn = threshold ? SeveritySchema.safeParse(threshold) : undefined;
+  if (failOn && !failOn.success) {
+    log.fail(`fail-on must be one of ${SeveritySchema.options.join(", ")}.`);
+    return 1;
+  }
   const apiKey = pr.fromFork ? undefined : deps.env.ANTHROPIC_API_KEY;
   const llm = apiKey
     ? (deps.createLlm ?? ((key) => createAnthropicLlmClient({ apiKey: key })))(apiKey)
@@ -131,11 +136,7 @@ export async function runAction(deps: ActionDeps): Promise<number> {
     }
   }
 
-  const failOn = SeveritySchema.safeParse(deps.env.PR_MENTOR_FAIL_ON || undefined);
-  if (!failOn.success) return 0;
-  const failing = [...result.findings, ...result.hidden].some(
-    (f) => RANK[f.severity] <= RANK[failOn.data],
-  );
-  if (failing) log.fail(`PR Mentor found issues at or above "${failOn.data}" severity.`);
-  return failing ? 1 : 0;
+  const failure = failOn?.success ? reviewGateFailure(result, failOn.data) : undefined;
+  if (failure) log.fail(failure);
+  return failure ? 1 : 0;
 }

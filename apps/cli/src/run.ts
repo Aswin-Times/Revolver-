@@ -9,9 +9,9 @@ import {
   DiffParseError,
   loadConfig,
   reviewDiff,
+  reviewGateFailure,
   type LlmClient,
   type ReviewConfig,
-  type Severity,
   type StaticPassOptions,
 } from "@pr-mentor/core";
 import { parseCliArgs, USAGE, UsageError, type ReviewArgs } from "./args.js";
@@ -29,8 +29,6 @@ export interface RunDeps {
   /** Tests swap in a fake Claude. */
   createLlm?: (config: ReviewConfig, env: Record<string, string | undefined>) => LlmClient | null;
 }
-
-const RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 async function review(args: ReviewArgs, deps: RunDeps): Promise<number> {
   const env = { ...deps.env };
@@ -65,10 +63,9 @@ async function review(args: ReviewArgs, deps: RunDeps): Promise<number> {
 
   const failOn = args.failOn;
   if (failOn === undefined) return 0;
-  const failing = [...result.findings, ...result.hidden].some(
-    (f) => RANK[f.severity] <= RANK[failOn],
-  );
-  return failing ? 1 : 0;
+  const failure = reviewGateFailure(result, failOn);
+  if (failure) deps.stderr(`${failure}\n`);
+  return failure ? 1 : 0;
 }
 
 /** The CLI: returns the exit code (0 ok, 1 --fail-on threshold met, 2 usage or input error). */

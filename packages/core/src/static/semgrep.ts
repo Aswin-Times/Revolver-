@@ -120,7 +120,10 @@ export const semgrepTool: StaticTool = {
     return {
       findings,
       ...(unparsable.length > 0
-        ? { detail: `couldn't parse ${unparsable.join(", ")}, so they were only partly checked` }
+        ? {
+            incomplete: true as const,
+            detail: `couldn't parse ${unparsable.join(", ")}, so they were only partly checked`,
+          }
         : {}),
     };
   },

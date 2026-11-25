@@ -141,6 +141,29 @@ describe("runAction", () => {
     expect(await runAction(deps({ env: { PR_MENTOR_FAIL_ON: "high" } }).d)).toBe(0);
   });
 
+  it("rejects invalid thresholds and fails a gated review when a scanner fails", async () => {
+    const invalid = deps({ env: { PR_MENTOR_FAIL_ON: "urgent" } });
+    expect(await runAction(invalid.d)).toBe(1);
+    expect(invalid.log.failed[0]).toMatch(/fail-on must be/);
+
+    const broken = deps({
+      env: { PR_MENTOR_FAIL_ON: "critical" },
+      staticOptions: {
+        registry: [
+          {
+            name: "ruff",
+            appliesTo: () => true,
+            run: async () => {
+              throw new Error("failed");
+            },
+          },
+        ],
+      },
+    });
+    expect(await runAction(broken.d)).toBe(1);
+    expect(broken.log.failed[0]).toMatch(/Incomplete checks: ruff/);
+  });
+
   it("explains missing permissions instead of crashing when GitHub refuses the comments", async () => {
     const refusing: PullRequestApi = {
       ...fakeApi().api,

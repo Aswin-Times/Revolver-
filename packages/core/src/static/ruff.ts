@@ -361,6 +361,7 @@ export const ruffTool: StaticTool = {
       findings,
       ...(unparsable.length > 0
         ? {
+            incomplete: true as const,
             detail: `couldn't parse ${unparsable.join(", ")} (syntax error), so they were only partly checked`,
           }
         : {}),

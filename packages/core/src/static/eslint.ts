@@ -258,6 +258,7 @@ export const eslintTool: StaticTool = {
       findings,
       ...(unparsable.size > 0
         ? {
+            incomplete: true as const,
             detail: `couldn't parse ${[...unparsable].join(", ")}, so they were only partly checked`,
           }
         : {}),

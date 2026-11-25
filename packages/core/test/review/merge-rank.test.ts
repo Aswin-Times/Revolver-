@@ -77,6 +77,22 @@ describe("mergeFindings", () => {
     });
     expect(confirmed.findings[0]?.confidence).toBe(0.95);
   });
+
+  it("retains high-confidence security findings and their original severity floor", () => {
+    const secret = f({ source: "gitleaks", severity: "critical", confidence: 0.95 });
+    const vulnerable = f({ confidence: 0.9 });
+    const result = mergeFindings({
+      staticFindings: [secret, vulnerable],
+      staticItems: numberStaticFindings([secret, vulnerable]),
+      verdicts: [
+        { id: "S1", verdict: "reject", why: "looks like a fixture" },
+        { id: "S2", verdict: "confirm", severity: "low", why: "looks harmless" },
+      ],
+      llmFindings: [],
+    });
+    expect(result.findings.map((finding) => finding.severity)).toEqual(["critical", "high"]);
+    expect(result.rejected[0]?.why).toBe("looks like a fixture");
+  });
 });
 
 describe("rankFindings", () => {
