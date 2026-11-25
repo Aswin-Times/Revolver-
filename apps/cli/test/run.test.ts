@@ -108,7 +108,19 @@ describe("pr-mentor review", () => {
         ),
       complete: () => Promise.reject(new Error("unreachable")),
     };
-    const h = harness({ createLlm: () => noCreds });
+    const h = harness({
+      createLlm: () => noCreds,
+      staticOptions: {
+        registry: [],
+        runner: async () => ({
+          exitCode: 0,
+          stdout: "",
+          stderr: "",
+          timedOut: false,
+          truncated: false,
+        }),
+      },
+    });
     expect(await run(["review", "--base", "main"], h.deps)).toBe(0);
     expect(h.out()).toContain("No Anthropic credentials found");
     expect(h.out()).toContain("missing-tests check");

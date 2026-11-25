@@ -1,5 +1,11 @@
 import type { LlmClient, LlmRequest, LlmResponse } from "../../src/llm/client.js";
 import type { LlmReview } from "../../src/llm/schema.js";
+import type { CommandRunner } from "../../src/static/exec.js";
+
+export const cleanPromptScan: CommandRunner = async (command, args) => {
+  if (command !== "gitleaks" || args[0] !== "stdin") throw new Error("unexpected scanner command");
+  return { exitCode: 0, stdout: "", stderr: "", timedOut: false, truncated: false };
+};
 
 export const usage = (input = 1000, output = 500) => ({
   inputTokens: input,

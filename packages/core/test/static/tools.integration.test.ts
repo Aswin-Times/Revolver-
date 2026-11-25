@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseDiff } from "../../src/diff/parse.js";
 import type { FileDiff } from "../../src/diff/types.js";
+import { screenPrompt } from "../../src/llm/screen.js";
 import { runCommand, ToolNotFoundError } from "../../src/static/exec.js";
 import { gitleaksTool } from "../../src/static/gitleaks.js";
 import { ruffTool } from "../../src/static/ruff.js";
@@ -62,6 +63,13 @@ async function contextFor(change: ReturnType<typeof newFile>): Promise<ToolConte
 describe.skipIf(!(await installed("gitleaks", ["version"])))("gitleaks (real)", () => {
   // Built at runtime so no real-looking key is ever committed (GitHub push protection).
   const awsKey = ["AKIA", "QYLPMN5H", "HHFQZOXK"].join("");
+
+  it("screens the rendered prompt even when a removed line contains an allow annotation", async () => {
+    await expect(screenPrompt('    1 + name = "demo"')).resolves.toBeUndefined();
+    await expect(
+      screenPrompt(`      - aws_access_key_id="${awsKey}" # gitleaks:allow\n`),
+    ).rejects.toThrow(/potential secret/);
+  });
 
   it("finds a hardcoded AWS key on the right line without exposing it", async () => {
     const ctx = await contextFor(

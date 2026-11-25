@@ -7,7 +7,7 @@ import { verifiedRepo } from "../../src/repo/verify.js";
 import { reviewDiff } from "../../src/review/review.js";
 import type { StaticTool } from "../../src/static/tool.js";
 import type { WorkspaceFile } from "../../src/static/workspace.js";
-import { answer, emptyReview, fakeLlm } from "../llm/helpers.js";
+import { answer, cleanPromptScan, emptyReview, fakeLlm } from "../llm/helpers.js";
 
 const ROUTES = [
   "def user(db, request):",
@@ -55,7 +55,10 @@ function tool(
   };
 }
 
-const base = (registry: StaticTool[]) => ({ config: DEFAULT_CONFIG, static: { registry } });
+const base = (registry: StaticTool[]) => ({
+  config: DEFAULT_CONFIG,
+  static: { registry, runner: cleanPromptScan },
+});
 
 describe("reviewDiff", () => {
   it("stops early with a friendly message when the PR is too large", async () => {

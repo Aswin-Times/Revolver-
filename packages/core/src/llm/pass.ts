@@ -6,7 +6,9 @@ import { fitToBudget } from "./budget.js";
 import { LlmUnavailableError, type LlmClient, type LlmRequest } from "./client.js";
 import { buildPrompt, numberStaticFindings, type StaticItem } from "./prompt.js";
 import { LlmReviewSchema, type LlmReview } from "./schema.js";
+import { PromptScreenError, screenPrompt } from "./screen.js";
 import { validateLlmReview, type ValidVerdict } from "./validate.js";
+import type { CommandRunner } from "../static/exec.js";
 
 export interface LlmPassInput {
   /** Reviewable files (already filtered by prepareDiff). */
@@ -17,6 +19,7 @@ export interface LlmPassInput {
   redact: (text: string) => string;
   config: ReviewConfig;
   client: LlmClient;
+  promptScanner?: CommandRunner;
 }
 
 export interface LlmReport {
@@ -120,10 +123,21 @@ export async function runLlmPass(input: LlmPassInput): Promise<LlmPassResult> {
     return { staticItems, request };
   };
 
+  let lastScreened: string | undefined;
+  const check = async (request: LlmRequest) => {
+    if (request.user === lastScreened) return;
+    await screenPrompt(request.user, input.promptScanner);
+    lastScreened = request.user;
+  };
+
   try {
     const plan = await fitToBudget(
       input.files,
-      (files) => client.countTokens(requestFor(files).request),
+      async (files) => {
+        const { request } = requestFor(files);
+        await check(request);
+        return client.countTokens(request);
+      },
       config.budget.maxInputTokens,
     );
     if (!plan) {
@@ -135,6 +149,7 @@ export async function runLlmPass(input: LlmPassInput): Promise<LlmPassResult> {
     omittedFiles = plan.omitted.map((f) => f.path);
     const built = requestFor(plan.files);
     let request = built.request;
+    await check(request);
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const response = await client.complete(request);
@@ -193,6 +208,7 @@ export async function runLlmPass(input: LlmPassInput): Promise<LlmPassResult> {
     }
     return without("failed", "Claude didn't return a usable review.");
   } catch (error) {
+    if (error instanceof PromptScreenError) return without("failed", error.message);
     if (error instanceof LlmUnavailableError) {
       const skipped = error.reason === "no-credentials" || error.reason === "auth-failed";
       return without(skipped ? "skipped" : "failed", error.message);

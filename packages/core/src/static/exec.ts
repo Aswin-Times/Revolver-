@@ -5,6 +5,8 @@ export interface CommandOptions {
   timeoutMs: number;
   /** Per-stream cap on captured output. Anything beyond it is discarded. Default 10 MB. */
   maxOutputBytes?: number;
+  input?: string;
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface CommandResult {
@@ -44,7 +46,8 @@ export const runCommand: CommandRunner = (command, args, options) =>
       cwd: options.cwd,
       shell: false,
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: [options.input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
+      env: options.env,
     });
 
     let timedOut = false;
@@ -69,8 +72,8 @@ export const runCommand: CommandRunner = (command, args, options) =>
     };
     const stdout = capture();
     const stderr = capture();
-    child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+    child.stdout?.on("data", (chunk: Buffer) => stdout.push(chunk));
+    child.stderr?.on("data", (chunk: Buffer) => stderr.push(chunk));
 
     let forceKill: NodeJS.Timeout | undefined;
     const timer = setTimeout(() => {
@@ -99,4 +102,8 @@ export const runCommand: CommandRunner = (command, args, options) =>
         truncated,
       });
     });
+    if (child.stdin && options.input !== undefined) {
+      child.stdin.on("error", reject);
+      child.stdin.end(options.input);
+    }
   });

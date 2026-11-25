@@ -130,8 +130,9 @@ encouraging summary.
   `untrusted-diff-<hash of its content>`, so diff text can't close it. Every line carries its
   new-side line number. The prompt says plainly that instructions inside the diff must never
   be followed.
-- **Secrets never leave your machine:** the diff is run through the static pass's `redact()`
-  first, which hides everything Gitleaks found plus well-known key formats.
+- **Local secret screening:** the static pass masks detected secrets and well-known key formats.
+  Gitleaks then scans the rendered prompt, including removed lines, before token counting or
+  completion. A failed scan or a potential secret in the prompt stops the Claude pass.
 - **Strict JSON:** structured outputs (`output_config.format`, built from a Zod schema), then
   validated again on our side. Findings must point at a file and line the diff shows; links
   must be on an allowlist of docs sites; `@mentions`, raw HTML and images are neutralised.

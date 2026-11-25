@@ -5,7 +5,7 @@ import type { FileDiff } from "../../src/diff/types.js";
 import type { Finding } from "../../src/finding.js";
 import { LlmUnavailableError } from "../../src/llm/client.js";
 import { runLlmPass } from "../../src/llm/pass.js";
-import { answer, emptyReview, fakeLlm, usage } from "./helpers.js";
+import { answer, cleanPromptScan, emptyReview, fakeLlm, usage } from "./helpers.js";
 
 const fileDiff = (path: string, lines: string[]): FileDiff => {
   const [file] = parseDiff(
@@ -52,6 +52,7 @@ const run = (
     redact: identity,
     config: DEFAULT_CONFIG,
     client,
+    promptScanner: cleanPromptScan,
     ...overrides,
   });
 
@@ -69,6 +70,41 @@ const llmFinding = {
 };
 
 describe("runLlmPass", () => {
+  it("withholds the prompt from both provider endpoints if local screening fails", async () => {
+    const client = fakeLlm({});
+    const result = await run(client, {
+      promptScanner: async () => {
+        throw new Error("private scanner error");
+      },
+    });
+    expect(result.report).toMatchObject({
+      status: "failed",
+      detail: "Gitleaks could not screen the outbound prompt.",
+    });
+    expect(client.counted).toEqual([]);
+    expect(client.requests).toEqual([]);
+  });
+
+  it("screens and blocks a potential secret on a removed line", async () => {
+    const client = fakeLlm({});
+    const removed = 'password = "removed test credential"';
+    const files = parseDiff(
+      `--- a/config.py\n+++ b/config.py\n@@ -1 +1 @@\n-${removed}\n+password = None\n`,
+    );
+    let screened: string | undefined;
+    const result = await run(client, {
+      files,
+      staticFindings: [],
+      promptScanner: async (command, args, options) => {
+        screened = options.input;
+        return { ...(await cleanPromptScan(command, args, options)), exitCode: 42 };
+      },
+    });
+    expect(screened).toContain(removed);
+    expect(result.report.detail).toMatch(/potential secret/);
+    expect(client.counted).toEqual([]);
+    expect(client.requests).toEqual([]);
+  });
   it("returns validated verdicts and new findings, with usage, cost and counts", async () => {
     const client = fakeLlm({
       responses: [

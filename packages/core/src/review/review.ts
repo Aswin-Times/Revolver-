@@ -100,7 +100,14 @@ export async function reviewDiff(
 
   const llm = options.llm === undefined ? new AnthropicLlmClient() : options.llm;
   const pass = llm
-    ? await runLlmPass({ files, staticFindings, redact: staticPass.redact, config, client: llm })
+    ? await runLlmPass({
+        files,
+        staticFindings,
+        redact: staticPass.redact,
+        config,
+        client: llm,
+        ...(options.static?.runner ? { promptScanner: options.static.runner } : {}),
+      })
     : {
         report: llmSkipped(config, "The Claude pass was turned off."),
         verdicts: [],
