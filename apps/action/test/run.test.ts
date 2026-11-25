@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runCommand } from "@pr-mentor/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { InlineComment } from "../src/comments.js";
+import type { ExistingInlineComment, InlineComment } from "../src/comments.js";
 import { readFingerprint, SUMMARY_MARKER } from "../src/fingerprint.js";
 import type { PullRequestApi } from "../src/github.js";
 import { runAction, type ActionDeps } from "../src/run.js";
@@ -40,11 +40,11 @@ beforeAll(async () => {
 
 afterAll(() => rmSync(repo, { recursive: true, force: true }));
 
-function fakeApi(existing: string[] = []) {
+function fakeApi(existing: ExistingInlineComment[] = []) {
   const reviews: { body: string; comments: InlineComment[] }[] = [];
   const summaries: string[] = [];
   const api: PullRequestApi = {
-    listCommentBodies: () => Promise.resolve(existing),
+    listInlineComments: () => Promise.resolve(existing),
     createReview: (_pr, body, comments) => {
       if (comments.length > 0) reviews.push({ body, comments });
       return Promise.resolve({ posted: comments.length, failed: 0 });
@@ -107,10 +107,10 @@ describe("runAction", () => {
   it("posts nothing new on a second run, but still refreshes the summary", async () => {
     const first = fakeApi();
     await runAction(deps({ api: first.api }).d);
-    const bodies = first.reviews.flatMap((r) => r.comments.map((c) => c.body));
-    expect(bodies.every((b) => readFingerprint(b))).toBe(true);
+    const comments = first.reviews.flatMap((r) => r.comments);
+    expect(comments.every((c) => readFingerprint(c.body))).toBe(true);
 
-    const second = fakeApi(bodies);
+    const second = fakeApi(comments);
     expect(await runAction(deps({ api: second.api }).d)).toBe(0);
     expect(second.reviews).toEqual([]);
     expect(second.summaries[0]).toContain(
@@ -136,6 +136,22 @@ describe("runAction", () => {
     expect(log.failed[0]).toContain("push");
   });
 
+  it("requires opt-in and the exact base checkout for pull_request_target", async () => {
+    const eventName = "pull_request_target";
+    expect(await runAction(deps({ eventName }).d)).toBe(1);
+
+    const env = { PR_MENTOR_TRUSTED_BASE_CHECKOUT: "true" };
+    const trusted = deps({ eventName, env });
+    expect(await runAction(trusted.d)).toBe(0);
+    expect(trusted.log.outputs.findings).toBe("1");
+
+    const wrongCheckout = deps({ eventName, env });
+    const payload = wrongCheckout.d.payload as { pull_request: { base: { sha: string } } };
+    payload.pull_request.base.sha = headSha;
+    expect(await runAction(wrongCheckout.d)).toBe(1);
+    expect(wrongCheckout.log.failed[0]).toMatch(/PR base SHA/);
+  });
+
   it("fails the check when a finding reaches fail-on", async () => {
     expect(await runAction(deps({ env: { PR_MENTOR_FAIL_ON: "medium" } }).d)).toBe(1);
     expect(await runAction(deps({ env: { PR_MENTOR_FAIL_ON: "high" } }).d)).toBe(0);
@@ -153,9 +169,7 @@ describe("runAction", () => {
           {
             name: "ruff",
             appliesTo: () => true,
-            run: async () => {
-              throw new Error("failed");
-            },
+            run: () => Promise.reject(new Error("failed")),
           },
         ],
       },
@@ -167,7 +181,7 @@ describe("runAction", () => {
   it("explains missing permissions instead of crashing when GitHub refuses the comments", async () => {
     const refusing: PullRequestApi = {
       ...fakeApi().api,
-      listCommentBodies: () =>
+      listInlineComments: () =>
         Promise.reject(
           Object.assign(new Error("Resource not accessible by integration"), { status: 403 }),
         ),

@@ -73,9 +73,7 @@ describe("runLlmPass", () => {
   it("withholds the prompt from both provider endpoints if local screening fails", async () => {
     const client = fakeLlm({});
     const result = await run(client, {
-      promptScanner: async () => {
-        throw new Error("private scanner error");
-      },
+      promptScanner: () => Promise.reject(new Error("private scanner error")),
     });
     expect(result.report).toMatchObject({
       status: "failed",

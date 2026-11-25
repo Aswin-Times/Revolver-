@@ -62,21 +62,39 @@ const comment = (path: string, line: number) => ({
 });
 
 describe("createGitHubApi", () => {
-  it("lists bodies of our earlier review comments across pages", async () => {
+  it("lists the current anchors of marked review comments across pages", async () => {
     const { api } = fakeGitHub({
       "GET /repos/class/alice-shop/pulls/7/comments": () => ({
-        body: [{ body: `ours ${marker("aaaaaaaaaaaaaaaa")}` }, { body: "a human reply" }],
+        body: [
+          {
+            body: `ours ${marker("aaaaaaaaaaaaaaaa")}`,
+            path: "a.py",
+            line: 9,
+            start_line: 7,
+            side: "RIGHT",
+          },
+          { body: "a human reply", path: "a.py", line: 9, side: "RIGHT" },
+          {
+            body: `outdated ${marker("cccccccccccccccc")}`,
+            path: "a.py",
+            line: null,
+            original_line: 4,
+            side: "RIGHT",
+          },
+        ],
         headers: {
           link: '<https://api.github.com/repos/class/alice-shop/pulls/7/comments?page=2>; rel="next"',
         },
       }),
       "GET /repos/class/alice-shop/pulls/7/comments?page=2": () => ({
-        body: [{ body: `ours ${marker("bbbbbbbbbbbbbbbb")}` }],
+        body: [
+          { body: `ours ${marker("bbbbbbbbbbbbbbbb")}`, path: "b.py", line: 12, side: "RIGHT" },
+        ],
       }),
     });
-    expect(await api.listCommentBodies(pr)).toEqual([
-      `ours ${marker("aaaaaaaaaaaaaaaa")}`,
-      `ours ${marker("bbbbbbbbbbbbbbbb")}`,
+    expect(await api.listInlineComments(pr)).toEqual([
+      { body: `ours ${marker("aaaaaaaaaaaaaaaa")}`, path: "a.py", line: 7 },
+      { body: `ours ${marker("bbbbbbbbbbbbbbbb")}`, path: "b.py", line: 12 },
     ]);
   });
 

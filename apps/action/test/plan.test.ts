@@ -39,7 +39,11 @@ const finding = (overrides: Partial<Finding> = {}): Finding => ({
 
 describe("planReview", () => {
   it("posts every finding the first time, on the right line, with a fingerprint marker", () => {
-    const plan = planReview({ findings: [finding()], files: diffFor(1, CODE), existingBodies: [] });
+    const plan = planReview({
+      findings: [finding()],
+      files: diffFor(1, CODE),
+      existingComments: [],
+    });
     expect(plan.alreadyPosted).toBe(0);
     expect(plan.post).toHaveLength(1);
     expect(plan.post[0]).toMatchObject({ path: "app/users.py", line: 2, side: "RIGHT" });
@@ -50,12 +54,12 @@ describe("planReview", () => {
     const first = planReview({
       findings: [finding()],
       files: diffFor(1, CODE),
-      existingBodies: [],
+      existingComments: [],
     });
     const again = planReview({
       findings: [finding()],
       files: diffFor(1, CODE),
-      existingBodies: first.post.map((c) => c.body),
+      existingComments: first.post,
     });
     expect(again).toEqual({ post: [], alreadyPosted: 1 });
   });
@@ -64,21 +68,32 @@ describe("planReview", () => {
     const first = planReview({
       findings: [finding()],
       files: diffFor(1, CODE),
-      existingBodies: [],
+      existingComments: [],
     });
     const shifted = planReview({
       findings: [finding({ line: 12 })],
       files: diffFor(11, CODE),
-      existingBodies: first.post.map((c) => c.body),
+      existingComments: first.post.map((comment) => ({ ...comment, line: comment.line + 10 })),
     });
     expect(shifted.post).toEqual([]);
+  });
+
+  it("posts each occurrence of identical code and only skips the already-commented line", () => {
+    const files = diffFor(1, [...CODE, "", ...CODE]);
+    const findings = [finding(), finding({ line: 6 })];
+    const first = planReview({ findings, files, existingComments: [] });
+    expect(first.post.map((comment) => comment.line)).toEqual([2, 6]);
+
+    const next = planReview({ findings, files, existingComments: first.post.slice(0, 1) });
+    expect(next.alreadyPosted).toBe(1);
+    expect(next.post.map((comment) => comment.line)).toEqual([6]);
   });
 
   it("posts only the new finding after a push", () => {
     const first = planReview({
       findings: [finding()],
       files: diffFor(1, CODE),
-      existingBodies: [],
+      existingComments: [],
     });
     const next = planReview({
       findings: [
@@ -86,7 +101,7 @@ describe("planReview", () => {
         finding({ line: 3, category: "quality", severity: "low", ruleId: "ruff/F841", title: "x" }),
       ],
       files: diffFor(1, CODE),
-      existingBodies: first.post.map((c) => c.body),
+      existingComments: first.post,
     });
     expect(next.post.map((c) => c.line)).toEqual([3]);
   });
@@ -95,13 +110,13 @@ describe("planReview", () => {
     const together = planReview({
       findings: [finding({ line: 2, endLine: 3 })],
       files: diffFor(1, CODE),
-      existingBodies: [],
+      existingComments: [],
     });
     expect(together.post[0]).toMatchObject({ startLine: 2, line: 3 });
     const apart = planReview({
       findings: [finding({ line: 2, endLine: 30 })],
       files: diffFor(1, CODE),
-      existingBodies: [],
+      existingComments: [],
     });
     expect(apart.post[0]).toMatchObject({ line: 2 });
     expect(apart.post[0]).not.toHaveProperty("startLine");
@@ -109,8 +124,11 @@ describe("planReview", () => {
 
   it("skips a finding whose line isn't in the diff (GitHub would reject it)", () => {
     expect(
-      planReview({ findings: [finding({ line: 99 })], files: diffFor(1, CODE), existingBodies: [] })
-        .post,
+      planReview({
+        findings: [finding({ line: 99 })],
+        files: diffFor(1, CODE),
+        existingComments: [],
+      }).post,
     ).toEqual([]);
   });
 });

@@ -105,14 +105,14 @@ export async function runAction(deps: ActionDeps): Promise<number> {
 
   if (pr.fromFork) {
     log.warning(
-      "This PR comes from a fork, so GitHub gives the workflow a read-only token: the review is in the job summary instead of PR comments.",
+      "This PR comes from a fork. The static review is in the job summary instead of PR comments.",
     );
   } else {
     try {
       const plan = planReview({
         findings: result.findings,
         files: parseDiff(diff),
-        existingBodies: await deps.api.listCommentBodies(pr),
+        existingComments: await deps.api.listInlineComments(pr),
       });
       const posted = await deps.api.createReview(
         pr,

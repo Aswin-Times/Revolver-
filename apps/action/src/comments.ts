@@ -10,6 +10,13 @@ export interface InlineComment {
   body: string;
 }
 
+export interface ExistingInlineComment {
+  path: string;
+  /** Current right-side anchor reported by GitHub, after any line movement. */
+  line: number;
+  body: string;
+}
+
 /**
  * One inline review comment. Findings are already redacted and sanitized; secrets are
  * scrubbed once more here because this is the last step before text leaves the runner.

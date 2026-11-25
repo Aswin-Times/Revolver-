@@ -22,7 +22,7 @@ inputs:
     description: Show at most this many findings (default 15).
     default: ""
   fail-on:
-    description: Fail the check if any finding is at least critical | high | medium | low. Empty = never fail.
+    description: Fail on incomplete static coverage or findings at the selected severity (critical | high | medium | low). Empty disables the gate.
     default: ""
   trusted-base-checkout:
     description: Enable pull_request_target only when running the Action and workspace from trusted base code.

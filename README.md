@@ -214,17 +214,17 @@ pnpm pr-mentor review --base main --no-llm      # static checks only, free
 pnpm pr-mentor review --base main --format json --out review.json --fail-on high
 ```
 
-| Option                           | Default                       | What it does                                           |
-| -------------------------------- | ----------------------------- | ------------------------------------------------------ |
-| `--base <ref>` / `--diff <file>` | (one required)                | what to review                                         |
-| `--repo <dir>`                   | current directory             | where file contents are read from                      |
-| `--format markdown\|json`        | `markdown`                    | report format                                          |
-| `--out <file>`                   | stdout                        | write the report to a file                             |
-| `--no-llm`                       | off                           | skip Claude                                            |
-| `--model`, `--effort`            | `claude-sonnet-5-5`, `medium` | Claude model and thinking effort                       |
-| `--max-comments <n>`             | 15                            | findings shown                                         |
-| `--fail-on <severity>`           | off                           | exit 1 if any finding is at least this severe          |
-| `--env-file <file>`              | none                          | read `ANTHROPIC_API_KEY` and `PR_MENTOR_*` from a file |
+| Option                           | Default                       | What it does                                                      |
+| -------------------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| `--base <ref>` / `--diff <file>` | (one required)                | what to review                                                    |
+| `--repo <dir>`                   | current directory             | where file contents are read from                                 |
+| `--format markdown\|json`        | `markdown`                    | report format                                                     |
+| `--out <file>`                   | stdout                        | write the report to a file                                        |
+| `--no-llm`                       | off                           | skip Claude                                                       |
+| `--model`, `--effort`            | `claude-sonnet-5-5`, `medium` | Claude model and thinking effort                                  |
+| `--max-comments <n>`             | 15                            | findings shown                                                    |
+| `--fail-on <severity>`           | off                           | exit 1 on findings at this severity or incomplete static coverage |
+| `--env-file <file>`              | none                          | read `ANTHROPIC_API_KEY` and `PR_MENTOR_*` from a file            |
 
 The same settings can come from `PR_MENTOR_MODEL`, `PR_MENTOR_EFFORT`,
 `PR_MENTOR_MAX_COMMENTS`, `PR_MENTOR_MIN_CONFIDENCE`, `PR_MENTOR_MAX_INPUT_TOKENS` and
@@ -264,24 +264,24 @@ On every push to a PR it:
 
 - posts **inline comments** on the lines that need attention, in one review;
 - keeps **one summary comment** (the full report) up to date instead of adding new ones;
-- **never repeats a comment**: each one carries a hidden fingerprint of the issue and the code
-  it points at (not the line number), so pushing again, or adding lines above, doesn't
-  re-post it;
+- **reuses matching inline comments**: each one carries a fingerprint of the issue and code.
+  The Action compares it at GitHub's current line anchor, so identical code at different
+  positions gets separate comments;
 - writes the report to the **job summary**, and sets the `findings` and `cost-usd` outputs.
 
-| Input               | Default                       | What it does                                                  |
-| ------------------- | ----------------------------- | ------------------------------------------------------------- |
-| `anthropic-api-key` | empty                         | enables the Claude pass; without it the review is static-only |
-| `model`, `effort`   | `claude-sonnet-5-5`, `medium` | Claude model and thinking effort                              |
-| `max-comments`      | 15                            | findings shown                                                |
-| `fail-on`           | empty                         | fail the check if a finding is at least this severe           |
-| `github-token`      | `github.token`                | needs `pull-requests: write`                                  |
+| Input               | Default                       | What it does                                                              |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------- |
+| `anthropic-api-key` | empty                         | enables the Claude pass; without it the review is static-only             |
+| `model`, `effort`   | `claude-sonnet-5-5`, `medium` | Claude model and thinking effort                                          |
+| `max-comments`      | 15                            | findings shown                                                            |
+| `fail-on`           | empty                         | fail the check on findings at this severity or incomplete static coverage |
+| `github-token`      | `github.token`                | needs `pull-requests: write`                                              |
 
 It's a composite action: it installs the pinned Semgrep, Ruff and Gitleaks and builds PR Mentor
-on the runner, which adds about a minute to the job. It uses `on: pull_request` only. For PRs
-from forks, GitHub gives a read-only token and no secrets, so the review goes to the job
-summary instead of comments. `pull_request_target` is refused on purpose: it would run
-with write access and secrets alongside untrusted code.
+on the runner, which adds about a minute to the job. The example uses `on: pull_request`.
+Fork PRs get a static review in the job summary. This repository's own workflow opts into
+`pull_request_target` with `trusted-base-checkout: "true"`. It checks out the trusted base
+commit, fetches the PR head as Git objects, and reads the diff without executing PR code.
 
 This repository reviews its own pull requests the same way
 ([`.github/workflows/pr-mentor.yml`](.github/workflows/pr-mentor.yml)).

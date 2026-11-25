@@ -36,7 +36,7 @@ Options:
   --model <id>            Claude model (default: claude-sonnet-5-5, or PR_MENTOR_MODEL)
   --effort <level>        low | medium | high | xhigh | max (default: medium)
   --max-comments <n>      show at most n findings (default: 15)
-  --fail-on <severity>    exit 1 if any finding is at least critical | high | medium | low
+  --fail-on <severity>    exit 1 on incomplete static coverage or findings at critical | high | medium | low
   --env-file <file>       read ANTHROPIC_API_KEY and PR_MENTOR_* from this file
   -h, --help              show this help
 

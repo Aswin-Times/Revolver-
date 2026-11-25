@@ -1,12 +1,12 @@
 import { getOctokit } from "@actions/github";
-import type { InlineComment } from "./comments.js";
+import type { ExistingInlineComment, InlineComment } from "./comments.js";
 import type { PrRef } from "./event.js";
 import { isSummary, readFingerprint } from "./fingerprint.js";
 
 /** Everything the Action needs from GitHub. Tests drive the real client with a fake fetch. */
 export interface PullRequestApi {
-  /** Bodies of review comments PR Mentor posted earlier (identified by their marker). */
-  listCommentBodies(pr: PrRef): Promise<string[]>;
+  /** Earlier marked review comments that still have a current right-side anchor. */
+  listInlineComments(pr: PrRef): Promise<ExistingInlineComment[]>;
   createReview(
     pr: PrRef,
     body: string,
@@ -34,14 +34,21 @@ export function createGitHubApi(
   const octokit = getOctokit(token, options.fetch ? { request: { fetch: options.fetch } } : {});
 
   return {
-    async listCommentBodies(pr) {
+    async listInlineComments(pr) {
       const comments = await octokit.paginate(octokit.rest.pulls.listReviewComments, {
         owner: pr.owner,
         repo: pr.repo,
         pull_number: pr.number,
         per_page: 100,
       });
-      return comments.map((c) => c.body).filter((body) => readFingerprint(body) !== undefined);
+      return comments.flatMap((comment) => {
+        const { body, path } = comment;
+        const line = comment.start_line ?? comment.line;
+        if (typeof line !== "number" || comment.side !== "RIGHT" || !readFingerprint(body)) {
+          return [];
+        }
+        return [{ body, path, line }];
+      });
     },
 
     async createReview(pr, body, comments) {

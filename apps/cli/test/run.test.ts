@@ -112,13 +112,14 @@ describe("pr-mentor review", () => {
       createLlm: () => noCreds,
       staticOptions: {
         registry: [],
-        runner: async () => ({
-          exitCode: 0,
-          stdout: "",
-          stderr: "",
-          timedOut: false,
-          truncated: false,
-        }),
+        runner: () =>
+          Promise.resolve({
+            exitCode: 0,
+            stdout: "",
+            stderr: "",
+            timedOut: false,
+            truncated: false,
+          }),
       },
     });
     expect(await run(["review", "--base", "main"], h.deps)).toBe(0);
