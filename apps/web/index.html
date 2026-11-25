@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f7fb" />
+    <meta name="description" content="Browse and understand PR Mentor code reviews." />
+    <title>PR Mentor · Review Dashboard</title>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Workspace">
+        <a class="brand" href="./"
+          ><span class="brand-mark" aria-hidden="true">&lt;/&gt;</span
+          ><span>PR Mentor<small>REVIEW WORKSPACE</small></span></a
+        >
+        <nav aria-label="Dashboard">
+          <a class="nav-link active" href="#overview" aria-current="location"
+            ><span aria-hidden="true">▦</span> Overview</a
+          >
+          <a class="nav-link" href="#reviews"><span aria-hidden="true">≡</span> Review history</a>
+        </nav>
+        <div class="sidebar-footer"><span class="dot"></span> Instructor dashboard</div>
+      </aside>
+      <main id="main" tabindex="-1">
+        <header class="topbar">
+          <span class="breadcrumb"
+            >Workspace <span aria-hidden="true">/</span> <strong>Overview</strong></span
+          ><span id="data-badge" class="badge">Sample data</span>
+        </header>
+        <div class="content">
+          <section id="overview" aria-labelledby="overview-title">
+            <div class="intro">
+              <div>
+                <p class="eyebrow">CODE REVIEW</p>
+                <h1 id="overview-title">Review overview</h1>
+                <p>See what students are running into across pull requests.</p>
+              </div>
+            </div>
+            <div id="metrics" class="metrics" aria-label="Review metrics"></div>
+          </section>
+          <section class="panel history" id="reviews" aria-labelledby="reviews-title">
+            <div class="panel-heading">
+              <div>
+                <h2 id="reviews-title">Review history</h2>
+                <p>Recent reviews and the findings they surfaced.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Review</th>
+                    <th scope="col">Repository</th>
+                    <th scope="col">Findings</th>
+                    <th scope="col">Date</th>
+                  </tr>
+                </thead>
+                <tbody id="review-rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
