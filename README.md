@@ -25,6 +25,24 @@ senior developer, not a linter.
 
 ## Architecture
 
+### Instructor dashboard
+
+Run `pnpm dashboard` to open the browser dashboard. It starts with clearly labeled sample
+reviews. Export a report from the CLI and select **Import report** to use your own data:
+
+```sh
+pnpm build
+pnpm pr-mentor review --base main --no-llm --format json --out review.json
+pnpm dashboard
+```
+
+Review history, severity totals, and recurring issues update on import. Enter the repository
+name when importing to group reviews across assignments. Imported reports are stored in the
+current browser and stay on the device. The dashboard imports reports manually and does not
+connect to GitHub. To build the dashboard by itself, run `pnpm --filter @pr-mentor/web build`.
+
+### Review engine
+
 The core engine is a pure library: a diff and some repo context go in, a list of structured
 findings comes out. It knows nothing about GitHub. Thin adapters (CLI, GitHub Action,
 GitHub App) feed it diffs and publish the results.

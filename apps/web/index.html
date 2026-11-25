@@ -12,8 +12,7 @@
     <div class="app">
       <aside class="sidebar" aria-label="Workspace">
         <a class="brand" href="./"
-          ><span class="brand-mark" aria-hidden="true">&lt;/&gt;</span
-          ><span>PR Mentor<small>REVIEW WORKSPACE</small></span></a
+          ><span class="brand-mark" aria-hidden="true">&lt;/&gt;</span><span>PR Mentor</span></a
         >
         <nav aria-label="Dashboard">
           <a class="nav-link active" href="#overview" aria-current="location"
@@ -33,18 +32,45 @@
           <section id="overview" aria-labelledby="overview-title">
             <div class="intro">
               <div>
-                <p class="eyebrow">CODE REVIEW</p>
                 <h1 id="overview-title">Review overview</h1>
                 <p>See what students are running into across pull requests.</p>
               </div>
+              <button class="primary" id="open-import" type="button">+ Import report</button>
             </div>
+            <p id="feedback" class="feedback" role="status" hidden></p>
             <div id="metrics" class="metrics" aria-label="Review metrics"></div>
+            <div class="insights">
+              <section class="panel insight" aria-labelledby="severity-title">
+                <h2 id="severity-title">Findings by severity</h2>
+                <ul id="severity-chart" class="chart"></ul>
+              </section>
+              <section class="panel insight" aria-labelledby="recurring-title">
+                <h2 id="recurring-title">Recurring issues</h2>
+                <p>Issues appearing in two or more reviews.</p>
+                <ul id="recurring" class="recurring"></ul>
+              </section>
+            </div>
           </section>
           <section class="panel history" id="reviews" aria-labelledby="reviews-title">
             <div class="panel-heading">
               <div>
                 <h2 id="reviews-title">Review history</h2>
-                <p>Recent reviews and the findings they surfaced.</p>
+                <p id="history-count" role="status"></p>
+              </div>
+              <div class="filters">
+                <input
+                  type="search"
+                  id="query"
+                  aria-label="Search reviews"
+                  placeholder="Search reviews…"
+                />
+                <select id="severity-filter" aria-label="Filter reviews by severity">
+                  <option value="">All severities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
               </div>
             </div>
             <div class="table-wrap">
@@ -54,7 +80,7 @@
                     <th scope="col">Review</th>
                     <th scope="col">Repository</th>
                     <th scope="col">Findings</th>
-                    <th scope="col">Date</th>
+                    <th scope="col">Date added</th>
                   </tr>
                 </thead>
                 <tbody id="review-rows"></tbody>
@@ -64,6 +90,37 @@
         </div>
       </main>
     </div>
+    <dialog id="import-dialog" aria-labelledby="import-title">
+      <form id="import-form" class="dialog-content">
+        <div class="dialog-heading">
+          <h2 id="import-title">Import a review report</h2>
+          <button class="icon-button" type="button" data-close aria-label="Close import">×</button>
+        </div>
+        <p>Choose a JSON report exported by the PR Mentor CLI. It stays in this browser.</p>
+        <label
+          >Report file<input id="report-file" type="file" accept=".json,application/json" required
+        /></label>
+        <label
+          >Repository <span>(optional)</span
+          ><input id="repository" type="text" maxlength="200" placeholder="owner/repository"
+        /></label>
+        <p id="import-error" class="error" role="alert" hidden></p>
+        <button class="primary" type="submit">Import report</button>
+      </form>
+    </dialog>
+    <dialog id="review-dialog" aria-labelledby="detail-title">
+      <div class="dialog-content">
+        <div class="dialog-heading">
+          <h2 id="detail-title"></h2>
+          <button class="icon-button" type="button" data-close aria-label="Close review">×</button>
+        </div>
+        <p id="detail-meta"></p>
+        <div id="detail-findings" class="detail-findings"></div>
+        <button class="secondary danger" id="remove-review" type="button" hidden>
+          Remove from workspace
+        </button>
+      </div>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
